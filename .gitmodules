@@ -1,0 +1,6 @@
+[submodule "mongoose"]
+	path = mongoose
+	url = https://github.com/cesanta/mongoose
+[submodule "libchdr"]
+	path = libchdr
+	url = https://github.com/rtissera/libchdr
