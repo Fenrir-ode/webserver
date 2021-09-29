@@ -2063,6 +2063,9 @@ extern "C" uint32_t mame_parse_toc(const char *tocfname, cdrom_toc_t *out_cdrom_
 	uint32_t err;
 	cdrom_toc outtoc;
 	chdcd_track_input_info outinfo;
+
+	std::string fname(tocfname);
+	std::string path = get_file_path(fname);
 	if ((err = chdcd_parse_toc(tocfname, outtoc, outinfo)) == CHDERR_NONE)
 	{
 		// convert...
@@ -2130,6 +2133,9 @@ extern "C" uint32_t mame_parse_toc(const char *tocfname, cdrom_toc_t *out_cdrom_
 			out_cdrom_toc->tracks[i].idx1offs = outinfo.track[i].idx1offs;
 			out_cdrom_toc->tracks[i].offset = outinfo.track[i].offset;
 			out_cdrom_toc->tracks[i].swap = outinfo.track[i].swap;
+
+			// open each file
+			out_cdrom_toc->tracks[i].fp = fopen(out_cdrom_toc->tracks[i].filename, "rb");
 
 			// Fenrir toc
 			fenrir_toc[3 + i].ctrladr = out_cdrom_toc->tracks[i].trktype == CD_TRACK_AUDIO ? 0x01 : 0x41;

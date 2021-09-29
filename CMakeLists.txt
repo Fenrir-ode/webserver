@@ -20,6 +20,9 @@ add_executable(FenrirServer
     src/util/util.cpp
     src/cdfmt.c 
     src/main.c 
+    src/log.c
 )
+
 add_dependencies(FenrirServer libchdr)
+target_compile_definitions(FenrirServer PUBLIC  LOG_USE_COLOR)
 target_link_libraries(FenrirServer chdr-static)
