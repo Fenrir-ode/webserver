@@ -20,6 +20,7 @@ add_executable(FenrirServer
     src/util/util.cpp
     src/cdfmt.c 
     src/main.c 
+    src/httpd.c 
     src/log.c
 )
 
