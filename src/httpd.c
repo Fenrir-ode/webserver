@@ -37,6 +37,7 @@ void httpd_poll(struct mg_connection *c, int ev, void *ev_data, void *fn_data)
 {
     if (ev == MG_EV_CLOSE)
     {
+        log_info("MG_EV_CLOSE");
         poll_handler = NULL;
     }
     else if ((ev == MG_EV_POLL || ev == MG_EV_WRITE) && c->is_writable)
@@ -53,10 +54,14 @@ void httpd_poll(struct mg_connection *c, int ev, void *ev_data, void *fn_data)
     }
     else if (ev == MG_EV_HTTP_MSG)
     {
+        log_info("MG_EV_HTTP_MSG");
         struct mg_http_message *hm = (struct mg_http_message *)ev_data;
 
         for (int i = 0; i < MAX_HTTPD_ROUTE; i++)
         {
+            if (!httpd_route[i]) {
+                break;
+            }
             if (mg_http_match_uri(hm, httpd_route[i]->uri))
             {
                 uint32_t err = httpd_route[i]->http_handler(c, ev, ev_data, fn_data);
@@ -73,7 +78,7 @@ void httpd_poll(struct mg_connection *c, int ev, void *ev_data, void *fn_data)
                 return;
             }
         }
-        log_debug("fallback to static");
+        log_debug("fallback to static: %s", hm->uri);
         // fallback
         struct mg_http_serve_opts opts = {.root_dir = "isos"};
         mg_http_serve_dir(c, ev_data, &opts);

@@ -7,7 +7,8 @@
 #include "cdfmt.h"
 #include "httpd.h"
 
-#define DEFAULT_FNAME ("/mnt/g/esp_saturn/fenrir_server/build/isos/Burning Rangers (US)/Burning Rangers (US).cue")
+#define DEFAULT_FNAME ("/mnt/g/esp_saturn/fenrir_server/build/isos/Dragon Ball Z Shinbutouden (JP).cue")
+//#define DEFAULT_FNAME ("/mnt/g/esp_saturn/fenrir_server/build/isos/Burning Rangers (US)/Burning Rangers (US).cue")
 #define SECTOR_SIZE (2352)
 
 
@@ -96,8 +97,7 @@ static uint32_t data_poll_handler(struct mg_connection *c, int ev, void *ev_data
   // End transfert ?
   if (fenrir_user_data->req_size == 0)
   {
-    mg_printf(c, "0\r\n"
-                 "\r\n");
+    mg_http_printf_chunk(c, "");
 
     return 1;
   }
@@ -131,7 +131,7 @@ int main(void)
   httpd_add_route(&mgr, &httpd_route_toc);
   httpd_add_route(&mgr, &httpd_route_data);
 
-  mg_http_listen(&mgr, "http://localhost:8000", httpd_poll, (void *)&fenrir_user_data);
+  mg_http_listen(&mgr, "http://0.0.0.0:3000", httpd_poll, (void *)&fenrir_user_data);
 
   for (;;)
     mg_mgr_poll(&mgr, 50);
