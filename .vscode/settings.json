@@ -46,6 +46,7 @@
         "stdexcept": "cpp",
         "streambuf": "cpp",
         "mongoose.h": "c",
-        "cdfmt.h": "c"
+        "cdfmt.h": "c",
+        "chd.h": "c"
     }
 }

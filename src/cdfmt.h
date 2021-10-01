@@ -9,6 +9,8 @@ extern "C"
 #define __MAX_PATH_LEN (4096)
 
 #define CD_MAX_TRACKS (99) /* AFAIK the theoretical limit */
+    
+    typedef struct _chd_file chd_file;
 
     typedef struct
     {
@@ -45,7 +47,7 @@ extern "C"
         uint32_t idx0offs;
         uint32_t idx1offs;
         char filename[__MAX_PATH_LEN]; // filename for each track
-        FILE * fp;
+        FILE *fp;
 
     } cdrom_track_info_t;
 
@@ -72,18 +74,20 @@ extern "C"
 
     typedef struct
     {
-        // game toc
+        // mame toc
         cdrom_toc_t toc;
-        // ?
+        // chd file
+        chd_file * chd_file;
+        // fenrir toc
         raw_toc_dto_t toc_dto[CD_MAX_TRACKS + 3]; // 99 + 3 Metadata track
         // streams
         uint32_t req_fad;
         uint32_t req_size;
-        uint8_t * http_buffer;
+        uint8_t *http_buffer;
     } fenrir_user_data_t;
 
-    uint32_t mame_parse_toc(const char *tocfname, cdrom_toc_t *out_cdrom_toc, raw_toc_dto_t *fenrir_toc);
-    uint32_t read_data(fenrir_user_data_t * fenrir_user_data, uint8_t *data, uint32_t fad, uint32_t size);
+    uint32_t parse_toc(const char *tocfname, fenrir_user_data_t *, raw_toc_dto_t *fenrir_toc);
+    uint32_t read_data(fenrir_user_data_t *fenrir_user_data, uint8_t *data, uint32_t fad, uint32_t size);
 
 #ifdef __cplusplus
 }

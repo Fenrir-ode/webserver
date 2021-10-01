@@ -26,4 +26,4 @@ add_executable(FenrirServer
 
 add_dependencies(FenrirServer libchdr)
 target_compile_definitions(FenrirServer PUBLIC  LOG_USE_COLOR)
-target_link_libraries(FenrirServer chdr-static)
+target_link_libraries(FenrirServer chdr-static lzma zlib)

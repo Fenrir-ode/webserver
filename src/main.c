@@ -18,7 +18,7 @@ static void toc_http_handler(struct mg_connection *c, int ev, void *ev_data, voi
 {
   fenrir_user_data_t *fenrir_user_data = (fenrir_user_data_t *)fn_data;
 
-  if (mame_parse_toc(DEFAULT_FNAME, &fenrir_user_data->toc, fenrir_user_data->toc_dto) == 0)
+  if (parse_toc(DEFAULT_FNAME, fenrir_user_data, fenrir_user_data->toc_dto) == 0)
   {
     log_debug("parse toc: %d tracks found", fenrir_user_data->toc.numtrks);
     size_t sz = sizeof(raw_toc_dto_t) * (3 + fenrir_user_data->toc.numtrks);
