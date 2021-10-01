@@ -59,7 +59,8 @@ void httpd_poll(struct mg_connection *c, int ev, void *ev_data, void *fn_data)
 
         for (int i = 0; i < MAX_HTTPD_ROUTE; i++)
         {
-            if (!httpd_route[i]) {
+            if (!httpd_route[i])
+            {
                 break;
             }
             if (mg_http_match_uri(hm, httpd_route[i]->uri))

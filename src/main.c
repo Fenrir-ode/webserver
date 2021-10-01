@@ -11,7 +11,6 @@
 //#define DEFAULT_FNAME ("/mnt/g/esp_saturn/fenrir_server/build/isos/Burning Rangers (US)/Burning Rangers (US).cue")
 #define SECTOR_SIZE (2352)
 
-
 // =============================================================
 // Toc
 // =============================================================
@@ -45,7 +44,6 @@ static const httpd_route_t httpd_route_toc = {
     .uri = "/toc_bin",
     .http_handler = toc_http_handler};
 
-
 // =============================================================
 // Data
 // =============================================================
@@ -67,7 +65,7 @@ static uint32_t data_http_handler(struct mg_connection *c, int ev, void *ev_data
     if (sscanf((char *)range->ptr, "bytes=%d-%d", &range_start, &range_end) != EOF)
     {
       fenrir_user_data->req_fad = range_start / SECTOR_SIZE;
-      fenrir_user_data->req_size = SECTOR_SIZE * 200;
+      // fenrir_user_data->req_size = SECTOR_SIZE * 200;
 
       mg_printf(c, "HTTP/1.1 206 OK\r\n"
                    "Cache-Control: no-cache\r\n"
@@ -88,28 +86,30 @@ static uint32_t data_poll_handler(struct mg_connection *c, int ev, void *ev_data
 {
   fenrir_user_data_t *fenrir_user_data = (fenrir_user_data_t *)fn_data;
 
-  read_data(fenrir_user_data, fenrir_user_data->http_buffer, fenrir_user_data->req_fad, SECTOR_SIZE);
-  mg_http_write_chunk(c, fenrir_user_data->http_buffer, SECTOR_SIZE);
+  uint32_t err = read_data(fenrir_user_data, fenrir_user_data->http_buffer, fenrir_user_data->req_fad, SECTOR_SIZE);
 
-  fenrir_user_data->req_fad++;
-  fenrir_user_data->req_size -= SECTOR_SIZE;
-
-  // End transfert ?
-  if (fenrir_user_data->req_size == 0)
+  if (err == 0)
   {
-    mg_http_printf_chunk(c, "");
+    mg_http_write_chunk(c, fenrir_user_data->http_buffer, SECTOR_SIZE);
 
+    fenrir_user_data->req_fad++;
+    // fenrir_user_data->req_size -= SECTOR_SIZE;
+    return 0;
+  }
+  else
+  {
+    log_error("End transfert...");
+    c->is_draining = 1;
+    // End transfert
+    mg_http_printf_chunk(c, "");
     return 1;
   }
-
-  return 0;
 }
 
 static const httpd_route_t httpd_route_data = {
     .uri = "/data",
     .http_handler = data_http_handler,
     .poll_handler = data_poll_handler};
-
 
 // =============================================================
 // main
@@ -123,7 +123,11 @@ int main(void)
   struct mg_mgr mgr;
   struct mg_timer t1;
 
+  // prevent sigpipe signal - (mg_sock_send on disconnected sockets)
+  // signal(SIGPIPE, SIG_IGN);
+
   // chd_get_header(NULL);
+  mg_log_set("4");
 
   mg_mgr_init(&mgr);
   httpd_init(&mgr);

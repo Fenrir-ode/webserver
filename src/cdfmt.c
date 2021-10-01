@@ -33,8 +33,13 @@ uint32_t read_data(fenrir_user_data_t *fenrir_user_data, uint8_t *data, uint32_t
     uint64_t offset = track_info->offset + (fad - track_info->logframeofs) * track_info->datasize;
     log_debug("read at: %08x", offset);
 
-    fseek(track_info->fp, offset, SEEK_SET);
-    fread(data, 1, size, track_info->fp);
+    if (fseek(track_info->fp, offset, SEEK_SET) == 0)
+    {
+        if (fread(data, 1, size, track_info->fp) == size)
+        {
+            return 0;
+        }
+    }
 
-    return 0;
+    return 1;
 }
