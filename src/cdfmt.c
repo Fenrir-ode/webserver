@@ -11,6 +11,11 @@
 extern void cdrom_get_info_from_type_string(const char *typestring, uint32_t *trktype, uint32_t *datasize);
 extern uint32_t mame_parse_toc(const char *tocfname, cdrom_toc_t *out_cdrom_toc, raw_toc_dto_t *fenrir_toc);
 
+/* ECC utilities */
+extern int ecc_verify(const uint8_t *sector);
+extern void ecc_generate(uint8_t *sector);
+extern void ecc_clear(uint8_t *sector);
+
 static uint32_t cdrom_get_track_start(cdrom_toc_t *cdtoc, uint32_t track)
 {
 
@@ -207,7 +212,7 @@ static uint8_t get_track_number(cdrom_toc_t *toc, uint32_t frame)
 
     for (track = 0; track < toc->numtrks; track++)
     {
-        if (frame < toc->tracks[track].logframeofs)
+        if (frame < toc->tracks[track + 1].logframeofs)
         {
             return track;
         }
@@ -233,10 +238,36 @@ uint32_t read_data(fenrir_user_data_t *fenrir_user_data, uint8_t *data, uint32_t
 
         if (fseek(track_info->fp, offset, SEEK_SET) == 0)
         {
-            if (fread(data, 1, size, track_info->fp) == size)
+            if (fread(data, 1, track_info->datasize, track_info->fp) == track_info->datasize)
             {
+                // convert to 2352
+                if (track_info->datasize == 2048)
+                {
+                    uint8_t msf = lba_to_msf(fad);
+                    memmove(data + 16, data, track_info->datasize);
+
+                    uint8_t sync_header[] = {
+                        0x00, 0xFF, 0xFF, 0xFF,
+                        0xFF, 0xFF, 0xFF, 0xFF,
+                        0xFF, 0xFF, 0xFF, 0x00,
+                        (msf >> 16) & 0xFF, (msf >> 8) & 0xFF, (msf >> 0) & 0xFF, 0x01};
+
+                    memcpy(data, sync_header, 16);
+
+                    ecc_generate(data);
+                }
                 return 0;
             }
+            else
+            {
+                log_error("Failed to read at %d - %d", offset, track_info->datasize);
+                return 1;
+            }
+        }
+        else
+        {
+            log_error("Failed to seek to %d", offset);
+            return 1;
         }
     }
     else if (fenrir_user_data->type == IMAGE_TYPE_CHD)
@@ -257,10 +288,6 @@ uint32_t read_data(fenrir_user_data_t *fenrir_user_data, uint8_t *data, uint32_t
         }
         memcpy(data, fenrir_user_data->chd_hunk_buffer + hunkoffset * (CD_FRAME_SIZE), CD_MAX_SECTOR_DATA);
         fenrir_user_data->cur_hunk = hunknumber;
-        i++;
-        if (i>3) {
-            return 1;
-        }
         return 0;
     }
 

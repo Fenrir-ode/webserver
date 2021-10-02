@@ -87,6 +87,10 @@ static uint32_t data_poll_handler(struct mg_connection *c, int ev, void *ev_data
   if (err == 0)
   {
     mg_http_write_chunk(c, fenrir_user_data->http_buffer, SECTOR_SIZE);
+#if 0 //POSTMAN_DBG
+    mg_http_printf_chunk(c, ""); // postman dbg
+     c->is_draining = 1;
+#endif
 
     fenrir_user_data->req_fad++;
     // fenrir_user_data->req_size -= SECTOR_SIZE;
@@ -113,7 +117,7 @@ static const httpd_route_t httpd_route_data = {
 
 int main(int argc, char *argv[])
 {
-  uint8_t *http_buffer = (uint8_t *)malloc(4*2048);
+  uint8_t *http_buffer = (uint8_t *)malloc(4 * 2048);
   fenrir_user_data_t fenrir_user_data = {
       .filename = argv[1],
       .http_buffer = http_buffer};
