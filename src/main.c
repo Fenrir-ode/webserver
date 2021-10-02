@@ -7,18 +7,14 @@
 #include "cdfmt.h"
 #include "httpd.h"
 
-#define DEFAULT_FNAME ("/mnt/g/esp_saturn/fenrir_server/build/isos/Dragon Ball Z Shinbutouden (JP).cue")
-//#define DEFAULT_FNAME ("/mnt/g/esp_saturn/fenrir_server/build/isos/Burning Rangers (US)/Burning Rangers (US).cue")
-#define SECTOR_SIZE (2352)
-
 // =============================================================
 // Toc
 // =============================================================
-static void toc_http_handler(struct mg_connection *c, int ev, void *ev_data, void *fn_data)
+static uint32_t toc_http_handler(struct mg_connection *c, int ev, void *ev_data, void *fn_data)
 {
   fenrir_user_data_t *fenrir_user_data = (fenrir_user_data_t *)fn_data;
 
-  if (parse_toc(DEFAULT_FNAME, fenrir_user_data, fenrir_user_data->toc_dto) == 0)
+  if (parse_toc(fenrir_user_data->filename, fenrir_user_data, fenrir_user_data->toc_dto) == 0)
   {
     log_debug("parse toc: %d tracks found", fenrir_user_data->toc.numtrks);
     size_t sz = sizeof(raw_toc_dto_t) * (3 + fenrir_user_data->toc.numtrks);
@@ -115,19 +111,28 @@ static const httpd_route_t httpd_route_data = {
 // main
 // =============================================================
 
-int main(void)
+int main(int argc, char *argv[])
 {
-  uint8_t *http_buffer = (uint8_t *)malloc(SECTOR_SIZE);
+  uint8_t *http_buffer = (uint8_t *)malloc(4*2048);
   fenrir_user_data_t fenrir_user_data = {
+      .filename = argv[1],
       .http_buffer = http_buffer};
   struct mg_mgr mgr;
   struct mg_timer t1;
+
+  if (argc != 2)
+  {
+    log_error("No file specified");
+    return -1;
+  }
+
+  log_info("loading: %s", argv[1]);
 
   // prevent sigpipe signal - (mg_sock_send on disconnected sockets)
   // signal(SIGPIPE, SIG_IGN);
 
   // chd_get_header(NULL);
-  mg_log_set("4");
+  //mg_log_set("4");
 
   mg_mgr_init(&mgr);
   httpd_init(&mgr);

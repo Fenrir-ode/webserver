@@ -41,7 +41,7 @@ static void strdelchr(std::string &str, char chr)
  * @param [in,out]  datasize    If non-null, the datasize.
  */
 
-static void cdrom_get_info_from_type_string(const char *typestring, uint32_t *trktype, uint32_t *datasize)
+extern "C" void cdrom_get_info_from_type_string(const char *typestring, uint32_t *trktype, uint32_t *datasize)
 {
 	if (!strcmp(typestring, "MODE1"))
 	{

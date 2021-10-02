@@ -8,9 +8,17 @@ extern "C"
 #include <stdint.h>
 #define __MAX_PATH_LEN (4096)
 
+#define SECTOR_SIZE (2352)
 #define CD_MAX_TRACKS (99) /* AFAIK the theoretical limit */
-    
+
+    enum IMAGE_TYPE
+    {
+        IMAGE_TYPE_MAME_LDR,
+        IMAGE_TYPE_CHD
+    };
+
     typedef struct _chd_file chd_file;
+    typedef struct _chd_header chd_header;
 
     typedef struct
     {
@@ -74,10 +82,18 @@ extern "C"
 
     typedef struct
     {
+        // entry file name
+        char *filename;
+        // chd or other image
+        uint8_t type;
         // mame toc
         cdrom_toc_t toc;
         // chd file
-        chd_file * chd_file;
+        chd_file *chd_file;
+        const chd_header * chd_header;
+        uint8_t * chd_hunk_buffer;
+        uint32_t sectors_per_hunk; 
+        uint32_t cur_hunk;
         // fenrir toc
         raw_toc_dto_t toc_dto[CD_MAX_TRACKS + 3]; // 99 + 3 Metadata track
         // streams

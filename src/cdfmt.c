@@ -7,7 +7,19 @@
 #include "libchdr/chd.h"
 #include "libchdr/cdrom.h"
 
+/* mame stuff */
+extern void cdrom_get_info_from_type_string(const char *typestring, uint32_t *trktype, uint32_t *datasize);
 extern uint32_t mame_parse_toc(const char *tocfname, cdrom_toc_t *out_cdrom_toc, raw_toc_dto_t *fenrir_toc);
+
+static uint32_t cdrom_get_track_start(cdrom_toc_t *cdtoc, uint32_t track)
+{
+
+    /* handle lead-out specially */
+    if (track == 0xaa)
+        track = cdtoc->numtrks - 1;
+
+    return cdtoc->tracks[track].logframeofs;
+}
 
 static void fad_to_msf(uint32_t val, uint8_t *m, uint8_t *s, uint8_t *f)
 {
@@ -20,41 +32,101 @@ static void fad_to_msf(uint32_t val, uint8_t *m, uint8_t *s, uint8_t *f)
 
 static uint32_t chd_parse_toc(const char *tocfname, fenrir_user_data_t *fenrir_ud, raw_toc_dto_t *fenrir_toc)
 {
+    cdrom_toc_t *toc = &fenrir_ud->toc;
     chd_error err;
     if ((err = chd_open(tocfname, CHD_OPEN_READ, NULL, &fenrir_ud->chd_file)) == CHDERR_NONE)
+
     {
         char tmp[512];
         int track = 0, frames = 0, pregap = 0, postgap = 0;
         char type[64], subtype[32], pgtype[32], pgsub[32];
         int numtrks = 0;
+        uint32_t fad = 0;
 
-        for (int i = 0; i < 99; i++)
+        uint32_t physofs = 0;
+        uint32_t logofs = 0;
+        uint32_t chdofs = 0;
+
+        const chd_header *chd_header = chd_get_header(fenrir_ud->chd_file);
+        fenrir_ud->chd_header = chd_header;
+        fenrir_ud->sectors_per_hunk = chd_header->hunkbytes / chd_header->unitbytes;
+
+        fenrir_ud->chd_hunk_buffer = (uint8_t *)malloc(chd_header->hunkbytes);
+        fenrir_ud->cur_hunk = -1;
+
+        for (int i = 0; i < CD_MAX_TRACKS; i++)
         {
+            /* parse chd metadata */
             if (chd_get_metadata(fenrir_ud->chd_file, CDROM_TRACK_METADATA2_TAG, i, tmp, sizeof(tmp), NULL, NULL, NULL) == CHDERR_NONE)
             {
-                sscanf(tmp, CDROM_TRACK_METADATA2_FORMAT, &track, type, subtype, &frames, &pregap, pgtype, pgsub, &postgap);
-
-                // Fenrir toc
-                fenrir_toc[3 + i].ctrladr = type == CD_TRACK_AUDIO ? 0x01 : 0x41;
-                fenrir_toc[3 + i].frame = 0;
-                fenrir_toc[3 + i].min = 0;
-                fenrir_toc[3 + i].sec = 2;
-
-                fenrir_toc[3 + i].pframe = 0;
-                fenrir_toc[3 + i].pmin = 0;
-                fenrir_toc[3 + i].psec = 0;
-
-                fenrir_toc[3 + i].point = i + 1;
-                fenrir_toc[3 + i].tno = 0;
-                fenrir_toc[3 + i].zero = 0;
-
-               // uint32_t fad = cdrom_get_track_start(&outtoc, i) + 150;
-               // fad_to_msf(fad, &fenrir_toc[3 + i].pmin, &fenrir_toc[3 + i].psec, &fenrir_toc[3 + i].pframe);
+                if (sscanf(tmp, CDROM_TRACK_METADATA2_FORMAT, &track, type, subtype, &frames, &pregap, pgtype, pgsub, &postgap) != 8)
+                {
+                    log_error("Invalid chd metadata");
+                    return -1;
+                }
+            }
+            else if (chd_get_metadata(fenrir_ud->chd_file, CDROM_TRACK_METADATA_TAG, i, tmp, sizeof(tmp), NULL, NULL, NULL) == CHDERR_NONE)
+            {
+                if (sscanf(tmp, CDROM_TRACK_METADATA_FORMAT, &track, type, subtype, &frames) != 4)
+                {
+                    log_error("Invalid chd metadata");
+                    return -1;
+                }
             }
             else
             {
                 break;
             }
+
+            log_info("track: %d / frame: %d / type:%s", track, frames, type);
+
+            int padded = (frames + CD_TRACK_PADDING - 1) / CD_TRACK_PADDING;
+            int extraframes = padded * CD_TRACK_PADDING - frames;
+
+            uint32_t _pgtype, _pgdatasize = 0;
+
+            /* handle pregap */
+            if (pregap > 0)
+            {
+                if (pgtype[0] == 'V')
+                {
+                    cdrom_get_info_from_type_string(&pgtype[1], &_pgtype, &_pgdatasize);
+                }
+            }
+
+            /* build toc */
+            if (_pgdatasize == 0)
+            {
+                logofs += pregap;
+            }
+            else
+            {
+                toc->tracks[track - 1].logframeofs = pregap;
+            }
+
+            toc->tracks[track - 1].physframeofs = physofs;
+            toc->tracks[track - 1].logframeofs += logofs;
+            toc->tracks[track - 1].chdframeofs = chdofs;
+
+            chdofs += frames;
+            chdofs += extraframes;
+            logofs += frames;
+            physofs += frames;
+
+            // Fenrir toc
+            fenrir_toc[2 + track].ctrladr = (strcmp(type, "AUDIO") == 0) ? 0x01 : 0x41;
+            fenrir_toc[2 + track].frame = 0;
+            fenrir_toc[2 + track].min = 0;
+            fenrir_toc[2 + track].sec = 2;
+            fenrir_toc[2 + track].pframe = 0;
+            fenrir_toc[2 + track].pmin = 0;
+            fenrir_toc[2 + track].psec = 0;
+            fenrir_toc[2 + track].point = track;
+            fenrir_toc[2 + track].tno = 0;
+            fenrir_toc[2 + track].zero = 0;
+
+            fad_to_msf(toc->tracks[track - 1].logframeofs + 150, &fenrir_toc[2 + track].pmin, &fenrir_toc[2 + track].psec, &fenrir_toc[2 + track].pframe);
+            fad += frames;
 
             numtrks++;
         }
@@ -105,9 +177,10 @@ static uint32_t chd_parse_toc(const char *tocfname, fenrir_user_data_t *fenrir_u
             fenrir_toc[2].tno = 0;
             fenrir_toc[2].zero = 0;
 
-            //uint32_t fad = cdrom_get_track_start(&outtoc, 0xAA) + 150;
-            //fad_to_msf(fad, &fenrir_toc[2].pmin, &fenrir_toc[2].psec, &fenrir_toc[2].pframe);
+            fad_to_msf(toc->tracks[numtrks - 1].logframeofs + 150, &fenrir_toc[2].pmin, &fenrir_toc[2].psec, &fenrir_toc[2].pframe);
         }
+
+        fenrir_ud->toc.numtrks = numtrks;
 
         return 0;
     }
@@ -116,12 +189,14 @@ static uint32_t chd_parse_toc(const char *tocfname, fenrir_user_data_t *fenrir_u
 
 uint32_t parse_toc(const char *tocfname, fenrir_user_data_t *fenrir_ud, raw_toc_dto_t *fenrir_toc)
 {
-    if (0)
+    if (strstr(tocfname, ".chd") != NULL)
     {
+        fenrir_ud->type = IMAGE_TYPE_CHD;
         return chd_parse_toc(tocfname, fenrir_ud, fenrir_toc);
     }
     else
     {
+        fenrir_ud->type = IMAGE_TYPE_MAME_LDR;
         return mame_parse_toc(tocfname, &fenrir_ud->toc, fenrir_toc);
     }
 }
@@ -148,18 +223,45 @@ uint32_t read_data(fenrir_user_data_t *fenrir_user_data, uint8_t *data, uint32_t
         return 0;
     }
 
-    uint8_t track = get_track_number(&fenrir_user_data->toc, fad);
-    cdrom_track_info_t *track_info = &fenrir_user_data->toc.tracks[track];
-
-    uint64_t offset = track_info->offset + (fad - track_info->logframeofs) * track_info->datasize;
-    log_debug("read at: %08x", offset);
-
-    if (fseek(track_info->fp, offset, SEEK_SET) == 0)
+    if (fenrir_user_data->type == IMAGE_TYPE_MAME_LDR)
     {
-        if (fread(data, 1, size, track_info->fp) == size)
+        uint8_t track = get_track_number(&fenrir_user_data->toc, fad);
+        cdrom_track_info_t *track_info = &fenrir_user_data->toc.tracks[track];
+
+        uint64_t offset = track_info->offset + (fad - track_info->logframeofs) * track_info->datasize;
+        log_debug("read at: %08x", offset);
+
+        if (fseek(track_info->fp, offset, SEEK_SET) == 0)
         {
-            return 0;
+            if (fread(data, 1, size, track_info->fp) == size)
+            {
+                return 0;
+            }
         }
+    }
+    else if (fenrir_user_data->type == IMAGE_TYPE_CHD)
+    {
+        static int i = 0;
+        uint32_t hunknumber = (fad) / fenrir_user_data->sectors_per_hunk;
+        uint32_t hunkoffset = (fad) % fenrir_user_data->sectors_per_hunk;
+
+        log_debug("chdread at: %08x/%08x (%d)", hunknumber, hunkoffset, fad);
+        if (fenrir_user_data->cur_hunk != hunknumber)
+        {
+            chd_error err = chd_read(fenrir_user_data->chd_file, hunknumber, fenrir_user_data->chd_hunk_buffer);
+            if (err != CHDERR_NONE)
+            {
+                log_error("chd_read  :%d", err);
+                return 1;
+            }
+        }
+        memcpy(data, fenrir_user_data->chd_hunk_buffer + hunkoffset * (CD_FRAME_SIZE), CD_MAX_SECTOR_DATA);
+        fenrir_user_data->cur_hunk = hunknumber;
+        i++;
+        if (i>3) {
+            return 1;
+        }
+        return 0;
     }
 
     return 1;
