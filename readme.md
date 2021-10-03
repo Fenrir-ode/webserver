@@ -22,7 +22,7 @@ FenrirServer <image filename>
 
 For example:
 
-```
+```bash
 FenrirServer "MyGame.chd"
 ```
 
@@ -43,7 +43,10 @@ are each distrubted under their own terms.
 
 ## Docker
 
-To finish...
-```
-docker run --rm -it  -p 3000:3000 -v ${pwd}:/work fenrirserver:latest FenrirServer Sfa2.cue
+You can use Docker to launch the server.
+
+For example:
+
+```ps
+docker run --rm -it  -p 3000:3000 -v ${pwd}:/work ghcr.io/fenrir-ode/webserver:main FenrirServer Sfa2.cue
 ```
