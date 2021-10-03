@@ -90,6 +90,7 @@ static uint32_t data_poll_handler(struct mg_connection *c, int ev, void *ev_data
 #if 0 //POSTMAN_DBG
     mg_http_printf_chunk(c, ""); // postman dbg
      c->is_draining = 1;
+    return 1;
 #endif
 
     fenrir_user_data->req_fad++;

@@ -220,6 +220,20 @@ static uint8_t get_track_number(cdrom_toc_t *toc, uint32_t frame)
     return track;
 }
 
+static uint32_t dec_2_bcd(uint32_t a)
+{
+    uint32_t result = 0;
+    int shift = 0;
+
+    while (a != 0)
+    {
+        result |= (a % 10) << shift;
+        a /= 10;
+        shift += 4;
+    }
+    return result;
+}
+
 uint32_t read_data(fenrir_user_data_t *fenrir_user_data, uint8_t *data, uint32_t fad, uint32_t size)
 {
     memset(data, 0, size);
@@ -243,17 +257,21 @@ uint32_t read_data(fenrir_user_data_t *fenrir_user_data, uint8_t *data, uint32_t
                 // convert to 2352
                 if (track_info->datasize == 2048)
                 {
-                    uint8_t msf = lba_to_msf(fad);
+                    uint32_t msf = lba_to_msf_alt(fad + 150);
                     memmove(data + 16, data, track_info->datasize);
 
                     uint8_t sync_header[] = {
                         0x00, 0xFF, 0xFF, 0xFF,
                         0xFF, 0xFF, 0xFF, 0xFF,
                         0xFF, 0xFF, 0xFF, 0x00,
-                        (msf >> 16) & 0xFF, (msf >> 8) & 0xFF, (msf >> 0) & 0xFF, 0x01};
+                        dec_2_bcd((msf >> 16) & 0xFF), dec_2_bcd((msf >> 8) & 0xFF), dec_2_bcd((msf >> 0) & 0xFF), 0x01};
 
                     memcpy(data, sync_header, 16);
-
+#if 0
+                    char *hex = mg_hexdump(sync_header, sizeof(sync_header));
+                    log_debug("sync_header %s", hex);
+                    free(hex);
+#endif
                     ecc_generate(data);
                 }
                 return 0;
