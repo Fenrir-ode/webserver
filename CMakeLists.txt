@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.7)
 project(FenrirServer)
 
 # Add libchr
@@ -27,3 +27,5 @@ add_executable(FenrirServer
 add_dependencies(FenrirServer libchdr)
 target_compile_definitions(FenrirServer PUBLIC  LOG_USE_COLOR)
 target_link_libraries(FenrirServer chdr-static lzma zlib)
+
+install(TARGETS FenrirServer DESTINATION bin)

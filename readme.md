@@ -39,3 +39,11 @@ Toc parsing based on [MAME](https://docs.mamedev.org/).
 [libchdr](https://github.com/rtissera/libchdr) for CHD supports.
 
 are each distrubted under their own terms.
+
+
+## Docker
+
+To finish...
+```
+docker run --rm -it  -p 3000:3000 -v ${pwd}:/work fenrirserver:latest FenrirServer Sfa2.cue
+```
