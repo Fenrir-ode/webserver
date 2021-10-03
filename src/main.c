@@ -1,6 +1,7 @@
 // Copyright (c) 2020 Cesanta Software Limited
 // All rights reserved
 
+#include <signal.h>
 #include "mongoose.h"
 #include "log.h"
 // #include "libchdr/chd.h"
@@ -115,6 +116,13 @@ static const httpd_route_t httpd_route_data = {
 // =============================================================
 // main
 // =============================================================
+static volatile sig_atomic_t sig_end = 1;
+
+static void sig_handler(int unused)
+{
+    (void)unused;
+    sig_end = 0;
+}
 
 int main(int argc, char *argv[])
 {
@@ -147,7 +155,7 @@ int main(int argc, char *argv[])
 
   mg_http_listen(&mgr, "http://0.0.0.0:3000", httpd_poll, (void *)&fenrir_user_data);
 
-  for (;;)
+  while (sig_end)
     mg_mgr_poll(&mgr, 50);
   mg_timer_free(&t1);
   mg_mgr_free(&mgr);
