@@ -48,5 +48,5 @@ You can use Docker to launch the server.
 For example:
 
 ```ps
-docker run --rm -it  -p 3000:3000 -v ${pwd}:/work ghcr.io/fenrir-ode/webserver:main FenrirServer Sfa2.cue
+docker run --rm -it --init  -p 3000:3000 -v ${pwd}:/isos ghcr.io/fenrir-ode/webserver:main FenrirServer /isos/Sfa2.cue
 ```
