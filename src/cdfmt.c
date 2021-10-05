@@ -16,14 +16,21 @@ extern int ecc_verify(const uint8_t *sector);
 extern void ecc_generate(uint8_t *sector);
 extern void ecc_clear(uint8_t *sector);
 
-static uint32_t cdrom_get_track_start(cdrom_toc_t *cdtoc, uint32_t track)
+// =============================================================
+// utilities
+// =============================================================
+static uint32_t dec_2_bcd(uint32_t a)
 {
+    uint32_t result = 0;
+    int shift = 0;
 
-    /* handle lead-out specially */
-    if (track == 0xaa)
-        track = cdtoc->numtrks - 1;
-
-    return cdtoc->tracks[track].logframeofs;
+    while (a != 0)
+    {
+        result |= (a % 10) << shift;
+        a /= 10;
+        shift += 4;
+    }
+    return result;
 }
 
 static void fad_to_msf(uint32_t val, uint8_t *m, uint8_t *s, uint8_t *f)
@@ -35,6 +42,109 @@ static void fad_to_msf(uint32_t val, uint8_t *m, uint8_t *s, uint8_t *f)
     f[0] = temp % 75;
 }
 
+static uint8_t get_track_number(cdrom_toc_t *toc, uint32_t frame)
+{
+    uint8_t track = 0;
+
+    for (track = 0; track < toc->numtrks; track++)
+    {
+        if (frame < toc->tracks[track + 1].logframeofs)
+        {
+            return track;
+        }
+    }
+    // No track found, return the last track
+    return 0;
+}
+
+void fenrir_set_track(raw_toc_dto_t *fenrir_toc, uint8_t track, uint8_t ctrladr, uint32_t fad)
+{
+    fenrir_toc[2 + track].ctrladr = ctrladr;
+    fenrir_toc[2 + track].frame = 0;
+    fenrir_toc[2 + track].min = 0;
+    fenrir_toc[2 + track].sec = 2;
+    fenrir_toc[2 + track].pframe = 0;
+    fenrir_toc[2 + track].pmin = 0;
+    fenrir_toc[2 + track].psec = 0;
+    fenrir_toc[2 + track].point = track;
+    fenrir_toc[2 + track].tno = 0;
+    fenrir_toc[2 + track].zero = 0;
+
+    fad_to_msf(fad, &fenrir_toc[2 + track].pmin, &fenrir_toc[2 + track].psec, &fenrir_toc[2 + track].pframe);
+}
+
+static void chd_fenrir_set_leadin_leadout(raw_toc_dto_t *fenrir_toc, uint8_t numtrks, uint32_t leadout)
+{
+    // leadin/leadout
+    {
+        fenrir_toc[0].ctrladr = 0x41;
+        fenrir_toc[0].point = 0xa0;
+
+        fenrir_toc[0].frame = 0;
+        fenrir_toc[0].min = 0;
+        fenrir_toc[0].sec = 2;
+
+        fenrir_toc[0].pframe = 0;
+        fenrir_toc[0].pmin = 1;
+        fenrir_toc[0].psec = 0;
+
+        fenrir_toc[0].tno = 0;
+        fenrir_toc[0].zero = 0;
+    }
+    {
+        fenrir_toc[1].ctrladr = 0x01;
+        fenrir_toc[1].point = 0xa1;
+
+        fenrir_toc[1].frame = 0;
+        fenrir_toc[1].min = 0;
+        fenrir_toc[1].sec = 2;
+
+        fenrir_toc[1].pframe = 0;
+        fenrir_toc[1].pmin = numtrks;
+        fenrir_toc[1].psec = 0;
+
+        fenrir_toc[1].tno = 0;
+        fenrir_toc[1].zero = 0;
+    }
+    {
+        fenrir_toc[2].ctrladr = 0x01;
+        fenrir_toc[2].point = 0xa2;
+
+        fenrir_toc[2].frame = 0;
+        fenrir_toc[2].min = 0;
+        fenrir_toc[2].sec = 2;
+
+        fenrir_toc[2].pframe = 0;
+        fenrir_toc[2].pmin = 0;
+        fenrir_toc[2].psec = 0;
+
+        fenrir_toc[2].tno = 0;
+        fenrir_toc[2].zero = 0;
+
+        fad_to_msf(leadout, &fenrir_toc[2].pmin, &fenrir_toc[2].psec, &fenrir_toc[2].pframe);
+    }
+}
+
+void fenrir_set_leadin_leadout(cdrom_toc_t *out_cdrom_toc, raw_toc_dto_t *fenrir_toc, uint8_t numtrks, uint32_t leadout)
+{
+
+    if (numtrks == 1)
+    {
+        log_warn("Only 1 tracks found, add a fake audio track");
+        // change leadout
+        leadout = out_cdrom_toc->tracks[0].logframes + (2 * 150);
+
+        // Add a fake audio track at end
+        fenrir_set_track(fenrir_toc, numtrks + 1, 0x01, leadout);
+        numtrks++;
+    }
+
+    chd_fenrir_set_leadin_leadout(fenrir_toc, numtrks, leadout);
+}
+
+// =============================================================
+// parse toc
+// =============================================================
 static uint32_t chd_parse_toc(const char *tocfname, fenrir_user_data_t *fenrir_ud, raw_toc_dto_t *fenrir_toc)
 {
     cdrom_toc_t *toc = &fenrir_ud->toc;
@@ -119,72 +229,13 @@ static uint32_t chd_parse_toc(const char *tocfname, fenrir_user_data_t *fenrir_u
             physofs += frames;
 
             // Fenrir toc
-            fenrir_toc[2 + track].ctrladr = (strcmp(type, "AUDIO") == 0) ? 0x01 : 0x41;
-            fenrir_toc[2 + track].frame = 0;
-            fenrir_toc[2 + track].min = 0;
-            fenrir_toc[2 + track].sec = 2;
-            fenrir_toc[2 + track].pframe = 0;
-            fenrir_toc[2 + track].pmin = 0;
-            fenrir_toc[2 + track].psec = 0;
-            fenrir_toc[2 + track].point = track;
-            fenrir_toc[2 + track].tno = 0;
-            fenrir_toc[2 + track].zero = 0;
-
-            fad_to_msf(toc->tracks[track - 1].logframeofs + 150, &fenrir_toc[2 + track].pmin, &fenrir_toc[2 + track].psec, &fenrir_toc[2 + track].pframe);
+            fenrir_set_track(fenrir_toc, track, (strcmp(type, "AUDIO") == 0) ? 0x01 : 0x41, toc->tracks[track - 1].logframeofs + 150);
             fad += frames;
 
             numtrks++;
         }
 
-        // leadin/leadout
-        {
-            fenrir_toc[0].ctrladr = 0x41;
-            fenrir_toc[0].point = 0xa0;
-
-            fenrir_toc[0].frame = 0;
-            fenrir_toc[0].min = 0;
-            fenrir_toc[0].sec = 2;
-
-            fenrir_toc[0].pframe = 0;
-            fenrir_toc[0].pmin = 1;
-            fenrir_toc[0].psec = 0;
-
-            fenrir_toc[0].tno = 0;
-            fenrir_toc[0].zero = 0;
-        }
-        {
-            fenrir_toc[1].ctrladr = 0x01;
-            fenrir_toc[1].point = 0xa1;
-
-            fenrir_toc[1].frame = 0;
-            fenrir_toc[1].min = 0;
-            fenrir_toc[1].sec = 2;
-
-            fenrir_toc[1].pframe = 0;
-            fenrir_toc[1].pmin = numtrks;
-            fenrir_toc[1].psec = 0;
-
-            fenrir_toc[1].tno = 0;
-            fenrir_toc[1].zero = 0;
-        }
-        {
-            fenrir_toc[2].ctrladr = 0x01;
-            fenrir_toc[2].point = 0xa2;
-
-            fenrir_toc[2].frame = 0;
-            fenrir_toc[2].min = 0;
-            fenrir_toc[2].sec = 2;
-
-            fenrir_toc[2].pframe = 0;
-            fenrir_toc[2].pmin = 0;
-            fenrir_toc[2].psec = 0;
-
-            fenrir_toc[2].tno = 0;
-            fenrir_toc[2].zero = 0;
-
-            fad_to_msf(toc->tracks[numtrks - 1].logframeofs + 150, &fenrir_toc[2].pmin, &fenrir_toc[2].psec, &fenrir_toc[2].pframe);
-        }
-
+        chd_fenrir_set_leadin_leadout(fenrir_toc, numtrks, toc->tracks[numtrks - 1].logframeofs + 150);
         fenrir_ud->toc.numtrks = numtrks;
 
         return 0;
@@ -202,38 +253,24 @@ uint32_t parse_toc(const char *tocfname, fenrir_user_data_t *fenrir_ud, raw_toc_
     else
     {
         fenrir_ud->type = IMAGE_TYPE_MAME_LDR;
-        return mame_parse_toc(tocfname, &fenrir_ud->toc, fenrir_toc);
-    }
-}
-
-static uint8_t get_track_number(cdrom_toc_t *toc, uint32_t frame)
-{
-    uint8_t track = 0;
-
-    for (track = 0; track < toc->numtrks; track++)
-    {
-        if (frame < toc->tracks[track + 1].logframeofs)
+        uint32_t mame_toc = mame_parse_toc(tocfname, &fenrir_ud->toc, fenrir_toc);
+        if (mame_toc == 0)
         {
-            return track;
+            if (fenrir_ud->toc.numtrks == 1)
+            {
+                // Add a fake track
+                fenrir_ud->toc.numtrks = 2;
+                fenrir_ud->toc.tracks[1].logframeofs = 0;
+                fenrir_ud->toc.tracks[1].fp = fenrir_ud->toc.tracks[0].fp;
+            }
         }
+        return mame_toc;
     }
-    return track;
 }
 
-static uint32_t dec_2_bcd(uint32_t a)
-{
-    uint32_t result = 0;
-    int shift = 0;
-
-    while (a != 0)
-    {
-        result |= (a % 10) << shift;
-        a /= 10;
-        shift += 4;
-    }
-    return result;
-}
-
+// =============================================================
+// data read
+// =============================================================
 uint32_t read_data(fenrir_user_data_t *fenrir_user_data, uint8_t *data, uint32_t fad, uint32_t size)
 {
     memset(data, 0, size);

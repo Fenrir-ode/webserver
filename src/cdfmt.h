@@ -90,9 +90,9 @@ extern "C"
         cdrom_toc_t toc;
         // chd file
         chd_file *chd_file;
-        const chd_header * chd_header;
-        uint8_t * chd_hunk_buffer;
-        uint32_t sectors_per_hunk; 
+        const chd_header *chd_header;
+        uint8_t *chd_hunk_buffer;
+        uint32_t sectors_per_hunk;
         uint32_t cur_hunk;
         // fenrir toc
         raw_toc_dto_t toc_dto[CD_MAX_TRACKS + 3]; // 99 + 3 Metadata track
@@ -104,6 +104,9 @@ extern "C"
 
     uint32_t parse_toc(const char *tocfname, fenrir_user_data_t *, raw_toc_dto_t *fenrir_toc);
     uint32_t read_data(fenrir_user_data_t *fenrir_user_data, uint8_t *data, uint32_t fad, uint32_t size);
+
+    void fenrir_set_track(raw_toc_dto_t *fenrir_toc, uint8_t track, uint8_t ctrladr, uint32_t fad);
+    void fenrir_set_leadin_leadout(cdrom_toc_t *out_cdrom_toc, raw_toc_dto_t *fenrir_toc, uint8_t numtrks, uint32_t leadout);
 
 #ifdef __cplusplus
 }
