@@ -243,7 +243,7 @@ static uint32_t chd_parse_toc(const char *tocfname, fenrir_user_data_t *fenrir_u
     return 1;
 }
 
-uint32_t parse_toc(const char *tocfname, fenrir_user_data_t *fenrir_ud, raw_toc_dto_t *fenrir_toc)
+uint32_t cdfmt_parse_toc(const char *tocfname, fenrir_user_data_t *fenrir_ud, raw_toc_dto_t *fenrir_toc)
 {
     if (strstr(tocfname, ".chd") != NULL)
     {
@@ -271,7 +271,7 @@ uint32_t parse_toc(const char *tocfname, fenrir_user_data_t *fenrir_ud, raw_toc_
 // =============================================================
 // data read
 // =============================================================
-uint32_t read_data(fenrir_user_data_t *fenrir_user_data, uint8_t *data, uint32_t fad, uint32_t size)
+uint32_t cdfmt_read_data(fenrir_user_data_t *fenrir_user_data, uint8_t *data, uint32_t fad, uint32_t size)
 {
     memset(data, 0, size);
     if (fenrir_user_data == NULL)
@@ -347,4 +347,9 @@ uint32_t read_data(fenrir_user_data_t *fenrir_user_data, uint8_t *data, uint32_t
     }
 
     return 1;
+}
+
+uint32_t cdfmt_close(fenrir_user_data_t *fenrir_user_data)
+{
+    return 0;
 }

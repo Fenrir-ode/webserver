@@ -15,7 +15,7 @@ static uint32_t toc_http_handler(struct mg_connection *c, int ev, void *ev_data,
 {
   fenrir_user_data_t *fenrir_user_data = (fenrir_user_data_t *)fn_data;
 
-  if (parse_toc(fenrir_user_data->filename, fenrir_user_data, fenrir_user_data->toc_dto) == 0)
+  if (cdfmt_parse_toc(fenrir_user_data->filename, fenrir_user_data, fenrir_user_data->toc_dto) == 0)
   {
     log_debug("parse toc: %d tracks found", fenrir_user_data->toc.numtrks);
     size_t sz = sizeof(raw_toc_dto_t) * (3 + fenrir_user_data->toc.numtrks);
@@ -83,7 +83,7 @@ static uint32_t data_poll_handler(struct mg_connection *c, int ev, void *ev_data
 {
   fenrir_user_data_t *fenrir_user_data = (fenrir_user_data_t *)fn_data;
 
-  uint32_t err = read_data(fenrir_user_data, fenrir_user_data->http_buffer, fenrir_user_data->req_fad, SECTOR_SIZE);
+  uint32_t err = cdfmt_read_data(fenrir_user_data, fenrir_user_data->http_buffer, fenrir_user_data->req_fad, SECTOR_SIZE);
 
   if (err == 0)
   {

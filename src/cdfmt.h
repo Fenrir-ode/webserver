@@ -102,8 +102,9 @@ extern "C"
         uint8_t *http_buffer;
     } fenrir_user_data_t;
 
-    uint32_t parse_toc(const char *tocfname, fenrir_user_data_t *, raw_toc_dto_t *fenrir_toc);
-    uint32_t read_data(fenrir_user_data_t *fenrir_user_data, uint8_t *data, uint32_t fad, uint32_t size);
+    uint32_t cdfmt_parse_toc(const char *tocfname, fenrir_user_data_t *, raw_toc_dto_t *fenrir_toc);
+    uint32_t cdfmt_close(fenrir_user_data_t *fenrir_user_data);
+    uint32_t cdfmt_read_data(fenrir_user_data_t *fenrir_user_data, uint8_t *data, uint32_t fad, uint32_t size);
 
     void fenrir_set_track(raw_toc_dto_t *fenrir_toc, uint8_t track, uint8_t ctrladr, uint32_t fad);
     void fenrir_set_leadin_leadout(cdrom_toc_t *out_cdrom_toc, raw_toc_dto_t *fenrir_toc, uint8_t numtrks, uint32_t leadout);
