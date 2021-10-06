@@ -349,7 +349,25 @@ uint32_t cdfmt_read_data(fenrir_user_data_t *fenrir_user_data, uint8_t *data, ui
     return 1;
 }
 
+// =============================================================
+// Close all alocated ressources
+// =============================================================
 uint32_t cdfmt_close(fenrir_user_data_t *fenrir_user_data)
-{
+{    
+    if (fenrir_user_data->type == IMAGE_TYPE_MAME_LDR)
+    {
+        for (int i = 0; i < fenrir_user_data->toc.numtrks; i++)
+        {
+            fclose(fenrir_user_data->toc.tracks[i].fp);
+        }
+    }
+    else if (fenrir_user_data->type == IMAGE_TYPE_CHD)
+    {
+        chd_close(fenrir_user_data->chd_file);
+        if (fenrir_user_data->chd_hunk_buffer) {
+            free(fenrir_user_data->chd_hunk_buffer);
+        }
+    }
+    memset(fenrir_user_data, 0, sizeof(fenrir_user_data_t));
     return 0;
 }
