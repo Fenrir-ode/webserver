@@ -47,6 +47,7 @@
         "streambuf": "cpp",
         "mongoose.h": "c",
         "cdfmt.h": "c",
-        "chd.h": "c"
+        "chd.h": "c",
+        "ranges": "c"
     }
 }

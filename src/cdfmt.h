@@ -83,7 +83,7 @@ extern "C"
     typedef struct
     {
         // entry file name
-        char *filename;
+        char filename[__MAX_PATH_LEN];
         // chd or other image
         uint8_t type;
         // mame toc

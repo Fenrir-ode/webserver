@@ -38,7 +38,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/FenrirServer",
             "args": [
-                "/mnt/g/esp_saturn/fenrir_server/build/isos/Dragon Ball Z Shinbutouden (JP).cue"
+                "/mnt/e/esp_saturn/fenrir_server/build/isos/Dragon Ball Z Shinbutouden (JP)/Dragon Ball Z Shinbutouden (JP).cue"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build",

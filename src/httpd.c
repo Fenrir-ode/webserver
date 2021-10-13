@@ -37,7 +37,6 @@ void httpd_poll(struct mg_connection *c, int ev, void *ev_data, void *fn_data)
 {
     if (ev == MG_EV_CLOSE)
     {
-        log_info("MG_EV_CLOSE");
         poll_handler = NULL;
     }
     else if ((ev == MG_EV_POLL || ev == MG_EV_WRITE) && c->is_writable)
@@ -54,7 +53,6 @@ void httpd_poll(struct mg_connection *c, int ev, void *ev_data, void *fn_data)
     }
     else if (ev == MG_EV_HTTP_MSG)
     {
-        log_info("MG_EV_HTTP_MSG");
         struct mg_http_message *hm = (struct mg_http_message *)ev_data;
 
         for (int i = 0; i < MAX_HTTPD_ROUTE; i++)
@@ -65,6 +63,7 @@ void httpd_poll(struct mg_connection *c, int ev, void *ev_data, void *fn_data)
             }
             if (mg_http_match_uri(hm, httpd_route[i]->uri))
             {
+                // log_info("%s", hm->uri.ptr);
                 uint32_t err = httpd_route[i]->http_handler(c, ev, ev_data, fn_data);
                 if (err == 0)
                 {

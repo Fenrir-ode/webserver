@@ -9,11 +9,134 @@
 #include "httpd.h"
 
 // =============================================================
+// Menu
+// =============================================================
+#define SD_MENU_FILENAME_LENGTH 58
+#define SD_DIR_FLAG_DIRECTORY (1 << 31)
+#define MAX_ENTITY (3000)
+#define ISOS_DIR ("/mnt/e/esp_saturn/fenrir_server/build/isos/")
+
+// 64bytes - fenrir fmt
+typedef struct
+{
+  uint16_t id;
+  uint32_t flag;
+  char filename[SD_MENU_FILENAME_LENGTH];
+} __attribute__((packed)) sd_dir_entry_t;
+
+typedef struct
+{
+  uint16_t id;
+  uint32_t flag;
+  char *path;
+  char *name;
+} __attribute__((packed)) fs_cache_t;
+
+static sd_dir_entry_t sd_dir_entries[MAX_ENTITY];
+static fs_cache_t fs_cache[MAX_ENTITY];
+
+static uint32_t sd_dir_entries_count = 0;
+
+static void printdirentry(const char *name, void *userdata)
+{
+  uint32_t id = sd_dir_entries_count;
+  size_t size = 0;
+  time_t mtime = 0;
+  char path[MG_PATH_MAX], sz[64], mod[64];
+
+  snprintf(path, sizeof(path), "%s%c%s", ISOS_DIR, '/', name);
+  uint32_t flags = mg_fs_posix.stat(path, &size, &mtime);
+
+  strncpy(sd_dir_entries[id].filename, name, SD_MENU_FILENAME_LENGTH);
+  sd_dir_entries[id].id = __builtin_bswap16(id);
+  sd_dir_entries[id].flag = __builtin_bswap32((flags & MG_FS_DIR) ? SD_DIR_FLAG_DIRECTORY : 0);
+
+  fs_cache[id].name = strdup(name);
+  fs_cache[id].path = strdup(path);
+  fs_cache[id].id = id;
+  fs_cache[id].flag = (flags & MG_FS_DIR) ? SD_DIR_FLAG_DIRECTORY : 0;
+
+  sd_dir_entries_count++;
+
+  log_info("add[%d]: %s %s", id, path, name);
+}
+
+static void menu_http_handler_init()
+{
+  sd_dir_entries_count = 0;
+  mg_fs_posix.list("/mnt/e/esp_saturn/fenrir_server/build/isos/", printdirentry, NULL);
+}
+
+static uint32_t menu_http_handler(struct mg_connection *c, int ev, void *ev_data, void *fn_data)
+{
+  struct mg_http_message *hm = (struct mg_http_message *)ev_data;
+  struct mg_str *range = mg_http_get_header(hm, "range");
+
+  if (mg_vcasecmp(&hm->method, "HEAD") == 0)
+  {
+    mg_printf(c,
+              "HTTP/1.0 200 OK\r\n"
+              "entry-count: %lu\r\n"
+              "Cache-Control: no-cache\r\n"
+              "Content-Type: application/octet-stream\r\n"
+              "Content-Length: %lu\r\n\r\n",
+              sd_dir_entries_count,
+              (unsigned long)sd_dir_entries_count * sizeof(sd_dir_entry_t));
+    c->is_draining = 1;
+    return 0;
+  }
+  else
+  {
+    uint32_t range_start = 0;
+    uint32_t range_end = 0;
+    if (range && range->ptr)
+    {
+      if (sscanf((char *)range->ptr, "bytes=%d-%d", &range_start, &range_end) != EOF)
+      {
+      }
+    }
+    mg_printf(c,
+              "HTTP/1.0 200 OK\r\n"
+              "Entry-Count: %lu\r\n"
+              "Cache-Control: no-cache\r\n"
+              "Content-Type: application/octet-stream\r\n"
+
+              "Transfer-Encoding: chunked\r\n\r\n",
+              sd_dir_entries_count,
+              (unsigned long)sd_dir_entries_count * sizeof(sd_dir_entry_t));
+
+    uint32_t max = sd_dir_entries_count * sizeof(sd_dir_entry_t);
+    uint32_t sz = max;
+    mg_http_write_chunk(c, (void *)sd_dir_entries, sz);
+    return 0;
+  }
+}
+
+static const httpd_route_t httpd_route_menu = {
+    .uri = "/dir",
+    .http_handler = menu_http_handler};
+
+// =============================================================
 // Toc
 // =============================================================
 static uint32_t toc_http_handler(struct mg_connection *c, int ev, void *ev_data, void *fn_data)
 {
   fenrir_user_data_t *fenrir_user_data = (fenrir_user_data_t *)fn_data;
+  struct mg_http_message *hm = (struct mg_http_message *)ev_data;
+  char uri[64];
+  int id = -1;
+
+  // Check if a game is selected
+  memcpy(uri, hm->uri.ptr, hm->uri.len);
+  if (sscanf(uri, "/toc_bin/%d", &id) == 1)
+  {
+    log_debug("Asked to launch:%d", id);
+    if (id <= sd_dir_entries_count)
+    {
+      strcpy(fenrir_user_data->filename, fs_cache[id].path);
+      log_debug("Parse to launch:%s", fs_cache[id].name);
+    }
+  }
 
   if (cdfmt_parse_toc(fenrir_user_data->filename, fenrir_user_data, fenrir_user_data->toc_dto) == 0)
   {
@@ -39,6 +162,10 @@ static uint32_t toc_http_handler(struct mg_connection *c, int ev, void *ev_data,
 
 static const httpd_route_t httpd_route_toc = {
     .uri = "/toc_bin",
+    .http_handler = toc_http_handler};
+
+static const httpd_route_t httpd_route_toc_g = {
+    .uri = "/toc_bin/*",
     .http_handler = toc_http_handler};
 
 // =============================================================
@@ -113,6 +240,10 @@ static const httpd_route_t httpd_route_data = {
     .http_handler = data_http_handler,
     .poll_handler = data_poll_handler};
 
+static const httpd_route_t httpd_route_data_g = {
+    .uri = "/data/*",
+    .http_handler = data_http_handler,
+    .poll_handler = data_poll_handler};
 // =============================================================
 // main
 // =============================================================
@@ -120,16 +251,16 @@ static volatile sig_atomic_t sig_end = 1;
 
 static void sig_handler(int unused)
 {
-    (void)unused;
-    sig_end = 0;
+  (void)unused;
+  sig_end = 0;
 }
 
 int main(int argc, char *argv[])
 {
   uint8_t *http_buffer = (uint8_t *)malloc(4 * 2048);
   fenrir_user_data_t fenrir_user_data = {
-      .filename = argv[1],
       .http_buffer = http_buffer};
+  strcpy(fenrir_user_data.filename, argv[1]);
   struct mg_mgr mgr;
   struct mg_timer t1;
 
@@ -146,12 +277,15 @@ int main(int argc, char *argv[])
 
   // chd_get_header(NULL);
   //mg_log_set("4");
-
+  menu_http_handler_init();
   mg_mgr_init(&mgr);
   httpd_init(&mgr);
 
+  httpd_add_route(&mgr, &httpd_route_menu);
   httpd_add_route(&mgr, &httpd_route_toc);
+  httpd_add_route(&mgr, &httpd_route_toc_g);
   httpd_add_route(&mgr, &httpd_route_data);
+  httpd_add_route(&mgr, &httpd_route_data_g);
 
   mg_http_listen(&mgr, "http://0.0.0.0:3000", httpd_poll, (void *)&fenrir_user_data);
 
