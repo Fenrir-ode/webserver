@@ -285,7 +285,7 @@ uint32_t cdfmt_read_data(fenrir_user_data_t *fenrir_user_data, uint8_t *data, ui
         cdrom_track_info_t *track_info = &fenrir_user_data->toc.tracks[track];
 
         uint64_t offset = track_info->offset + (fad - track_info->logframeofs) * track_info->datasize;
-        log_debug("read at: %08x", offset);
+        log_trace("read at: %08x", offset);
 
         if (fseek(track_info->fp, offset, SEEK_SET) == 0)
         {

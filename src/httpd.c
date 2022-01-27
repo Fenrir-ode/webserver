@@ -63,6 +63,7 @@ void httpd_poll(struct mg_connection *c, int ev, void *ev_data, void *fn_data)
             }
             if (mg_http_match_uri(hm, httpd_route[i]->uri))
             {
+                log_trace(hm->message.ptr);
                 // log_info("%s", hm->uri.ptr);
                 uint32_t err = httpd_route[i]->http_handler(c, ev, ev_data, fn_data);
                 if (err == 0)
@@ -84,4 +85,19 @@ void httpd_poll(struct mg_connection *c, int ev, void *ev_data, void *fn_data)
         mg_http_serve_dir(c, ev_data, &opts);
         poll_handler = NULL;
     }
+}
+
+
+int http_get_range_header(struct mg_http_message *hm, uint32_t *range_start, uint32_t *range_end)
+{
+  struct mg_str *range = mg_http_get_header(hm, "range");
+  if (range && range->ptr)
+  {
+    if (sscanf((char *)range->ptr, "bytes=%d-%d", range_start, range_end) != EOF)
+    {
+      return 0;
+    }
+  }
+
+  return -1;
 }

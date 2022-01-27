@@ -5,130 +5,17 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "DBZ 1 Track - FenrirServer",
+            "name": "FenrirServer (verbose)",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/FenrirServer",
             "args": [
-                "/mnt/g/esp_saturn/fenrir_server/build/isos/Dbz.cue"
+                "--verbose",
+                "-d",
+                "/mnt/d/"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build",
-            
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                },
-                {
-                    "text": "handle SIGPIPE nostop noprint pass",
-                    "description": "ignore SIGPIPE",
-                    "ignoreFailures": true
-                }
-            ],
-            "preLaunchTask": "make"
-        },
-        {
-            "name": "DBZ - FenrirServer",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/FenrirServer",
-            "args": [
-                "/mnt/e/esp_saturn/fenrir_server/build/isos/Dragon Ball Z Shinbutouden (JP)/Dragon Ball Z Shinbutouden (JP).cue"
-            ],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/build",
-            
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                },
-                {
-                    "text": "handle SIGPIPE nostop noprint pass",
-                    "description": "ignore SIGPIPE",
-                    "ignoreFailures": true
-                }
-            ],
-            "preLaunchTask": "make"
-        },
-        {
-            "name": "CHD - FenrirServer",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/FenrirServer",
-            "args": [
-                "/mnt/g/esp_saturn/fenrir_server/build/isos/gekka no kishi - ouryussen (t-20606g).chd"
-            ],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/build",
-            
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                },
-                {
-                    "text": "handle SIGPIPE nostop noprint pass",
-                    "description": "ignore SIGPIPE",
-                    "ignoreFailures": true
-                }
-            ],
-            "preLaunchTask": "make"
-        },
-        
-        {
-            "name": "BR CUE - FenrirServer",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/FenrirServer",
-            "args": [
-                "/mnt/g/esp_saturn/fenrir_server/build/isos/Burning Rangers (US)/Burning Rangers (US).cue"
-            ],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/build",
-            
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                },
-                {
-                    "text": "handle SIGPIPE nostop noprint pass",
-                    "description": "ignore SIGPIPE",
-                    "ignoreFailures": true
-                }
-            ],
-            "preLaunchTask": "make"
-        },
-
-        {
-            "name": "DBZ 2048 - FenrirServer",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/FenrirServer",
-            "args": [
-                "/mnt/g/esp_saturn/fenrir_server/build/isos/DRAGON BALL Z SHINBUTOHDEN.cue"
-            ],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/build",
-            
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",

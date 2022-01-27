@@ -48,6 +48,7 @@
         "mongoose.h": "c",
         "cdfmt.h": "c",
         "chd.h": "c",
-        "ranges": "c"
+        "ranges": "c",
+        "ftw.h": "c"
     }
 }

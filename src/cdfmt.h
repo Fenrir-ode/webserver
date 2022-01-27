@@ -9,6 +9,8 @@ extern "C"
 #define __MAX_PATH_LEN (4096)
 
 #define SECTOR_SIZE (2352)
+#define SECTOR_SIZE_2048 (2048)
+
 #define CD_MAX_TRACKS (99) /* AFAIK the theoretical limit */
 
     enum IMAGE_TYPE
@@ -84,6 +86,8 @@ extern "C"
     {
         // entry file name
         char filename[__MAX_PATH_LEN];
+        char image_path[__MAX_PATH_LEN];
+
         // chd or other image
         uint8_t type;
         // mame toc
@@ -100,6 +104,8 @@ extern "C"
         uint32_t req_fad;
         uint32_t req_size;
         uint8_t *http_buffer;
+        // dir
+        uint32_t sd_dir_entries_offset;
     } fenrir_user_data_t;
 
     uint32_t cdfmt_parse_toc(const char *tocfname, fenrir_user_data_t *, raw_toc_dto_t *fenrir_toc);
