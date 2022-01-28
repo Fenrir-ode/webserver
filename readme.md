@@ -14,21 +14,23 @@ make
 
 ## Usage
 
-You can serve a cd image like this
+The server will traverse the file tree of the specified folder and look for files with ".iso", ".cue", ".chdr", ".gdi", ".nrg" extension
 
 ```
-FenrirServer <image filename>
+FenrirServer -d <folder>
 ```
 
 For example:
 
 ```bash
-FenrirServer "MyGame.chd"
+FenrirServer -d /mnt/d/
 ```
 
 ## Compatible image formats
 
-It supports .cue/.nrg/.iso/.chd 
+It supports .cue/.nrg/.iso/.chd.
+
+Compatible image format is provided by mame and libchr libraries.
 
 
 ## Licence
@@ -48,5 +50,5 @@ You can use Docker to launch the server.
 For example:
 
 ```ps
-docker run --rm -it --init  -p 3000:3000 -v ${pwd}:/isos ghcr.io/fenrir-ode/webserver:main FenrirServer /isos/Sfa2.cue
+docker run --rm -it --init  -p 3000:3000 -v ${pwd}:/isos ghcr.io/fenrir-ode/webserver:main FenrirServer -d /isos/
 ```
