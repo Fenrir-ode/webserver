@@ -52,3 +52,34 @@ For example:
 ```ps
 docker run --rm -it --init  -p 3000:3000 -v ${pwd}:/isos ghcr.io/fenrir-ode/webserver:main FenrirServer -d /isos/
 ```
+
+
+## API
+
+
+* /toc 
+
+Parse the .cue and return an array of raw_toc_dto_t
+
+``` c
+typedef struct
+{
+    uint8_t ctrladr;
+    uint8_t tno;
+    uint8_t point;
+    uint8_t min;
+    uint8_t sec;
+    uint8_t frame;
+    uint8_t zero;
+    uint8_t pmin;
+    uint8_t psec;
+    uint8_t pframe;
+} raw_toc_dto_t;
+```
+
+* /data
+
+Send the binaries data, use [Http Header Range](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Range) to return the correct chunks
+
+
+
