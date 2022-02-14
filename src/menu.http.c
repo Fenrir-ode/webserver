@@ -7,6 +7,7 @@
 // #include "libchdr/chd.h"
 #include "cdfmt.h"
 #include "httpd.h"
+#include "scandir.h"
 
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
@@ -111,11 +112,19 @@ static int ftw_process(const char *name, const struct stat *sb, int flag)
     return 0;
 }
 
+int scandir_cbk(const char * fullpath, const char * name, int attr) {
+
+            log_info("%s", fullpath);
+            printf("%s\n", name);
+}
+
 static void tree_walk(fenrir_user_data_t *fenrir_user_data)
 {
     //char path[MG_PATH_MAX];
     //snprintf(path, sizeof(path), "%s%c%s", fenrir_user_data->image_path, '/', name);
     ftw(fenrir_user_data->image_path, ftw_process, 2);
+
+   //fscandir(fenrir_user_data->image_path, scandir_cbk);
 }
 
 void menu_http_handler_init(fenrir_user_data_t *fud)
