@@ -12,7 +12,7 @@
             "args": [
                 "--verbose",
                 "-d",
-                "/mnt/d/"
+                "/mnt/d/saturn/"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build",

@@ -6,12 +6,17 @@ include(ExternalProject)
 ExternalProject_Add(libchdr
   GIT_REPOSITORY    https://github.com/rtissera/libchdr
   GIT_TAG           master
-  SOURCE_DIR        "${CMAKE_BINARY_DIR}/libchdr-src"
-  BINARY_DIR        "${CMAKE_BINARY_DIR}/libchdr-build"
+  PREFIX            "${CMAKE_BINARY_DIR}/libchdr"
   CMAKE_ARGS        "-DINSTALL_STATIC_LIBS=On"
+  INSTALL_COMMAND cmake -E echo "Skipping install step."
 )
 
-include_directories(mongoose "${CMAKE_BINARY_DIR}/libchdr-src/include" )
+include_directories(mongoose "${CMAKE_BINARY_DIR}/libchdr/src/libchdr/include" )
+link_directories(
+  ${CMAKE_BINARY_DIR}/libchdr/src/libchdr-build
+  ${CMAKE_BINARY_DIR}/libchdr/src/libchdr-build/deps/zlib-1.2.11
+  ${CMAKE_BINARY_DIR}/libchdr/src/libchdr-build/deps/lzma-19.00
+)
 
 add_executable(FenrirServer 
     mongoose/mongoose.c
@@ -19,7 +24,8 @@ add_executable(FenrirServer
     src/util/chdcd.cpp
     src/util/util.cpp
     src/cdfmt.c 
-    src/main.c 
+    src/server.c 
+    src/cli-main.c 
     src/menu.http.c 
     src/httpd.c 
     src/log.c
