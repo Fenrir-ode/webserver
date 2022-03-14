@@ -1,13 +1,20 @@
 #include <stdio.h>
 #include <string.h>
-#include <ftw.h>
-#include <libgen.h>
+//#include <ftw.h>
+//#include <libgen.h>
 #include "mongoose.h"
 #include "log.h"
 // #include "libchdr/chd.h"
 #include "cdfmt.h"
 #include "httpd.h"
 #include "scandir.h"
+
+#ifdef _MSC_VER 
+#define __builtin_bswap16 _byteswap_ushort 
+#define __builtin_bswap32 _byteswap_ulong  
+#define strncasecmp _strnicmp
+#define strcasecmp _stricmp
+#endif
 
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
@@ -25,7 +32,7 @@ typedef struct
     uint16_t id;
     uint32_t flag;
     char filename[SD_MENU_FILENAME_LENGTH];
-} __attribute__((packed)) sd_dir_entry_t;
+} sd_dir_entry_t;
 
 typedef struct
 {
@@ -33,7 +40,7 @@ typedef struct
     uint32_t flag;
     char *path;
     char *name;
-} __attribute__((packed)) fs_cache_t;
+} fs_cache_t;
 
 static sd_dir_entry_t sd_dir_entries[MAX_ENTITY];
 static fs_cache_t fs_cache[MAX_ENTITY];
@@ -83,48 +90,31 @@ static bool ext_is_handled(const char *name)
     return false;
 }
 
-static int ftw_process(const char *name, const struct stat *sb, int flag)
-{
-    // Accept files only
-    if (flag == 0)
+int scandir_cbk(const char* fullpath, const char* entryname, int attr) {
+
+    if (ext_is_handled(fullpath))
     {
+        uint32_t id = sd_dir_entries_count;
+        strncpy(sd_dir_entries[id].filename, entryname, SD_MENU_FILENAME_LENGTH - 1);
+        sd_dir_entries[id].id = __builtin_bswap16(id);
+        sd_dir_entries[id].flag = 0;
 
-        if (ext_is_handled(name))
-        {
-            const char *entryname = basename(name);
+        fs_cache[id].name = strdup(entryname);
+        fs_cache[id].path = strdup(fullpath);
+        fs_cache[id].id = id;
+        fs_cache[id].flag = 0;
 
-            uint32_t id = sd_dir_entries_count;
-            strncpy(sd_dir_entries[id].filename, entryname, SD_MENU_FILENAME_LENGTH - 1);
-            sd_dir_entries[id].id = __builtin_bswap16(id);
-            sd_dir_entries[id].flag = 0;
+        sd_dir_entries_count++;
 
-            fs_cache[id].name = strdup(entryname);
-            fs_cache[id].path = strdup(name);
-            fs_cache[id].id = id;
-            fs_cache[id].flag = 0;
-
-            sd_dir_entries_count++;
-
-            log_info("add[%d]: %s %s", id, name, entryname);
-        }
+        log_info("add[%d]: %s %s", id, fullpath, entryname);
     }
 
     return 0;
 }
 
-int scandir_cbk(const char * fullpath, const char * name, int attr) {
 
-            log_info("%s", fullpath);
-            printf("%s\n", name);
-}
-
-static void tree_walk(fenrir_user_data_t *fenrir_user_data)
-{
-    //char path[MG_PATH_MAX];
-    //snprintf(path, sizeof(path), "%s%c%s", fenrir_user_data->image_path, '/', name);
-    ftw(fenrir_user_data->image_path, ftw_process, 2);
-
-   //fscandir(fenrir_user_data->image_path, scandir_cbk);
+static void tree_walk(fenrir_user_data_t* fenrir_user_data) {
+    tree_scandir(fenrir_user_data->image_path, scandir_cbk);
 }
 
 void menu_http_handler_init(fenrir_user_data_t *fud)
@@ -178,7 +168,7 @@ static uint32_t menu_read_data(fenrir_user_data_t *fenrir_user_data)
     {
         uint32_t max = (sd_dir_entries_count * sizeof(sd_dir_entry_t)) - fenrir_user_data->sd_dir_entries_offset;
         uint32_t sz = MIN(max, SECTOR_SIZE_2048);
-        void *sd_dir_ptr = (void *)sd_dir_entries + fenrir_user_data->sd_dir_entries_offset;
+        uintptr_t sd_dir_ptr = (uintptr_t)sd_dir_entries + fenrir_user_data->sd_dir_entries_offset;
         memcpy(fenrir_user_data->http_buffer, sd_dir_ptr, sz);
 
         //log_debug("sd_dir_ptr : %p, inc: %d", sd_dir_ptr, sz);
@@ -214,7 +204,7 @@ static uint32_t menu_poll_handler(struct mg_connection *c, int ev, void *ev_data
     }
 }
 
-int menu_get_filename_by_id(int id, char *filename)
+int menu_get_filename_by_id(uint32_t id, char *filename)
 {
     if (id <= sd_dir_entries_count)
     {

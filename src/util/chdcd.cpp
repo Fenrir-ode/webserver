@@ -19,6 +19,11 @@
 //#include "corefile.h"
 //#include "corestr.h"
 
+#ifdef _MSC_VER 
+#define __bswap_16 _byteswap_ushort 
+#define __bswap_32 _byteswap_ulong  
+#endif
+
 static void strdelchr(std::string &str, char chr)
 {
 	for (size_t i = 0; i < str.length(); i++)

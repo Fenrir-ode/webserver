@@ -40,14 +40,22 @@ int main(int argc, char *argv[])
   int c;
   int option_index = 0;
   int option_valid = 0;
+  static int verbose_flag = 0;
 
   // setup buffer
   http_buffer = (uint8_t *)malloc(4 * 2048);
-  fenrir_user_data_t fenrir_user_data = {
-      .http_buffer = http_buffer};
+  if (http_buffer == NULL) {
+      log_error("Failled to allocate http buffer");
+      return -1;
+  }
+  fenrir_user_data_t* fenrir_user_data = (fenrir_user_data_t*)malloc(sizeof(fenrir_user_data_t));
+  if (fenrir_user_data == NULL) {
+      log_error("Failled to allocate fernrir user buffer");
+      return -1;
+  }
+  fenrir_user_data->http_buffer = http_buffer;
 
   // Parse options
-  static int verbose_flag;
 
   static const struct option long_options[] = {
       {"verbose", no_argument, &verbose_flag, 1},
@@ -66,7 +74,7 @@ int main(int argc, char *argv[])
       break;
     case 'd':
       option_valid++;
-      strcpy(fenrir_user_data.image_path, optarg);
+      strcpy(fenrir_user_data->image_path, optarg);
       break;
     default:
       log_error("");
@@ -89,8 +97,9 @@ int main(int argc, char *argv[])
     log_set_level(LOG_ERROR);
   }
 
-  server(&fenrir_user_data, noop, NULL);
+  server(fenrir_user_data, noop, NULL);
 
   free(http_buffer);
+  free(fenrir_user_data);
   return 0;
 }

@@ -1,11 +1,16 @@
 #include <stdio.h>
-#include <dirent.h>
-#include <filesystem>
+#include <ghc/filesystem.hpp>
 #include <fstream>
 #include <iostream>
 #include <filesystem>
 #include "scandir.h"
-namespace fs = std::filesystem;
+
+#if defined(WIN32) || defined(_WIN32)
+#include <Windows.h>
+#define PATH_MAX MAX_PATH
+#endif
+
+namespace fs = ghc::filesystem;
 
 // #define PATH_MAX 256
 
@@ -56,7 +61,7 @@ ULONG AdjustPrivileges()
 }
 #endif
 
-int fscandir(char *dirname, scandir_cbk_t cbk)
+int tree_scandir(char *dirname, scandir_cbk_t cbk)
 {
     std::error_code ec;
     int count = 1;
@@ -68,26 +73,20 @@ int fscandir(char *dirname, scandir_cbk_t cbk)
     std::cout << "WINDOWWS" << std::endl;
 #endif
 
-    //for (auto const &dir_entry : fs::recursive_directory_iterator(dirname, ec))
-    // auto dir_entry = std::filesystem::recursive_directory_iterator(dirname, fs::directory_options::skip_permission_denied, ec);
     try
     {
-        //   for (; dir_entry != std::filesystem::recursive_directory_iterator(); dir_entry++)
-        for (const auto &dirEntry : std::filesystem::recursive_directory_iterator(dirname, fs::directory_options::skip_permission_denied, ec))
+        for (const auto &dirEntry : fs::recursive_directory_iterator(dirname, fs::directory_options::skip_permission_denied, ec))
         {
-            /**/
-            // const std::string directoryName = (*dir_entry).path().filename();
-            try
+            if (dirEntry.is_regular_file())
             {
-
-                std::cout << (dirEntry).path().filename() << '\n';
-            }
-            catch (...)
-            {
+                const std::string fullpath = dirEntry.path().generic_string();
+                const std::string filename = dirEntry.path().filename().generic_string();
+                
+                cbk(fullpath.c_str(), filename.c_str(), 0);
             }
         }
     }
-    catch (std::filesystem::filesystem_error e)
+    catch (fs::filesystem_error e)
     {
         std::cout << e.code() << std::endl;
         std::cout << e.what() << std::endl;
