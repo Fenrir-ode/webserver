@@ -10,6 +10,8 @@
 #include "scandir.h"
 #include "menu.http.h"
 
+static int test_scandir_long = 0;
+
 #define FETCH_BUF_SIZE (256 * 1024)
 
 uint32_t menu_poll_handler(struct mg_connection *c, int ev, void *ev_data, void *fn_data);
@@ -20,7 +22,9 @@ struct fetch_data
     char *buf;
     char *cur;
     int code, closed;
+    size_t len;
 };
+
 static void fcb(struct mg_connection *c, int ev, void *ev_data, void *fn_data)
 {
     if (ev == MG_EV_HTTP_MSG)
@@ -74,6 +78,8 @@ static void fcb_poll(struct mg_connection *c, int ev, void *ev_data, void *fn_da
         struct fetch_data *fd = (struct fetch_data *)fn_data;
         memcpy(fd->cur, hm->chunk.ptr, hm->chunk.len);
         fd->cur += (int)hm->chunk.len;
+        fd->len += hm->chunk.len;
+        mg_http_delete_chunk(c, hm);
         (void)c;
     }
 }
@@ -85,6 +91,7 @@ static int fetch_chunked(struct mg_mgr *mgr, struct fetch_data *fd, const char *
     struct mg_connection *c = mg_http_connect(mgr, url, fcb_poll, fd);
     va_list ap;
     fd->cur = fd->buf;
+    fd->len = 0;
     va_start(ap, fmt);
     mg_vprintf(c, fmt, ap);
     va_end(ap);
@@ -139,6 +146,8 @@ typedef PACKED(
 
 UTEST(menu, menu_get)
 {
+    test_scandir_long = 1;
+
     const char *url = "http://127.0.0.1:3000";
     char buf[FETCH_BUF_SIZE];
     struct fetch_data fd = {buf, 0, 0};
@@ -159,14 +168,19 @@ UTEST(menu, menu_get)
 
     ASSERT_STREQ("game0", sd_dir_entries[0].filename);
     ASSERT_STREQ("game1", sd_dir_entries[1].filename);
+    ASSERT_STREQ("game80", sd_dir_entries[32].filename);
+    ASSERT_STREQ("game125", sd_dir_entries[50].filename);
+    ASSERT_STREQ("game195", sd_dir_entries[78].filename);
 
     mg_mgr_free(&mgr);
+
+    test_scandir_long = 0;
 }
 
 UTEST(menu, menu_get_by_id)
 {
     menu_http_handler_init(&fud);
-    
+
     int err;
     char filename[512];
     err = menu_get_filename_by_id(&fud, 0, filename);
@@ -195,8 +209,22 @@ int main(int argc, const char *const argv[])
 
 int tree_scandir(char *dirname, scandir_cbk_t cbk, uintptr_t ud)
 {
-    cbk("fullpath/game0.cue", "game0", ud);
-    cbk("fullpath/game1.iso", "game1", ud);
-    cbk("fullpath/game2.unk", "game2", ud);
+    if (test_scandir_long == 0) {
+        cbk("fullpath/game0.cue", "game0", ud);
+        cbk("fullpath/game1.iso", "game1", ud);
+        cbk("fullpath/game2.unk", "game2", ud);
+    }
+    else {
+        for (int i = 0; i < 200; i++) {
+            const char* ext[] = { ".iso", ".cue", ".chd", ".none", "" };
+            char filename[256];
+            char game[256];
+            sprintf(filename, "fullpath/game%d%s", i, ext[i % 5]);
+            sprintf(game, "game%d", i);
+               
+            cbk(filename, game, ud);
+        }
+
+    }
     return 0;
 }

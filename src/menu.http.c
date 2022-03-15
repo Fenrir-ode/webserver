@@ -96,6 +96,7 @@ static void tree_walk(fenrir_user_data_t *fenrir_user_data)
 void menu_http_handler_init(fenrir_user_data_t *fud)
 {
     fud->sd_dir_entries_count = 0;
+    fud->sd_dir_entries_offset = 0;
     tree_walk(fud);
 }
 
@@ -107,7 +108,7 @@ static uint32_t menu_read_data(fenrir_user_data_t *fenrir_user_data)
         uint32_t max = (fenrir_user_data->sd_dir_entries_count * sizeof(sd_dir_entry_t)) - fenrir_user_data->sd_dir_entries_offset;
         uint32_t sz = MIN(max, SECTOR_SIZE_2048);
         uintptr_t sd_dir_ptr = (uintptr_t)sd_dir_entries + fenrir_user_data->sd_dir_entries_offset;
-        memcpy(fenrir_user_data->http_buffer, (void*)sd_dir_ptr, sz);
+        memcpy(fenrir_user_data->http_buffer, (void *)sd_dir_ptr, sz);
 
         fenrir_user_data->sd_dir_entries_offset += sz;
         return 0;
