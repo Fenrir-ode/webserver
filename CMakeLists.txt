@@ -68,3 +68,7 @@ if(WIN32)
 endif()
 
 install(TARGETS FenrirServer DESTINATION bin)
+
+# tests
+enable_testing()
+add_subdirectory (tests/menu)

@@ -24,7 +24,7 @@ static uint32_t toc_http_handler(struct mg_connection *c, int ev, void *ev_data,
   memcpy(uri, hm->uri.ptr, hm->uri.len);
   if (sscanf(uri, "/toc_bin/%d", &id) == 1)
   {
-    if (menu_get_filename_by_id(id, fenrir_user_data->filename) == -1)
+    if (menu_get_filename_by_id(fenrir_user_data, id, fenrir_user_data->filename) == -1)
     {
       log_error("Nothing found for %d", id);
     }

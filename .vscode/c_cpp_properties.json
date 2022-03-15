@@ -4,6 +4,8 @@
             "name": "Linux",
             "includePath": [
                 "${default}",
+                "${workspaceFolder}/src",                
+                "${workspaceFolder}/tests",
                 "${workspaceFolder}/mongoose"
             ],
             "compilerPath": "/usr/bin/gcc",

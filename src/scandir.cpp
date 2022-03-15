@@ -61,7 +61,7 @@ ULONG AdjustPrivileges()
 }
 #endif
 
-int tree_scandir(char *dirname, scandir_cbk_t cbk)
+int tree_scandir(char *dirname, scandir_cbk_t cbk, uintptr_t ud)
 {
     std::error_code ec;
     int count = 1;
@@ -82,7 +82,7 @@ int tree_scandir(char *dirname, scandir_cbk_t cbk)
                 const std::string fullpath = dirEntry.path().generic_string();
                 const std::string filename = dirEntry.path().filename().generic_string();
                 
-                cbk(fullpath.c_str(), filename.c_str(), 0);
+                cbk(fullpath.c_str(), filename.c_str(), ud);
             }
         }
     }

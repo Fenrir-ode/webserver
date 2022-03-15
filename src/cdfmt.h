@@ -106,6 +106,7 @@ extern "C"
         uint8_t *http_buffer;
         // dir
         uint32_t sd_dir_entries_offset;
+        uint32_t sd_dir_entries_count;
     } fenrir_user_data_t;
 
     uint32_t cdfmt_parse_toc(const char *tocfname, fenrir_user_data_t *, raw_toc_dto_t *fenrir_toc);

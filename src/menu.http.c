@@ -9,9 +9,9 @@
 #include "httpd.h"
 #include "scandir.h"
 
-#ifdef _MSC_VER 
-#define __builtin_bswap16 _byteswap_ushort 
-#define __builtin_bswap32 _byteswap_ulong  
+#ifdef _MSC_VER
+#define __builtin_bswap16 _byteswap_ushort
+#define __builtin_bswap32 _byteswap_ulong
 #define strncasecmp _strnicmp
 #define strcasecmp _stricmp
 #endif
@@ -45,8 +45,6 @@ typedef struct
 static sd_dir_entry_t sd_dir_entries[MAX_ENTITY];
 static fs_cache_t fs_cache[MAX_ENTITY];
 
-static uint32_t sd_dir_entries_count = 0;
-
 static bool ext_is_handled(const char *name)
 {
     char *exts[] = {
@@ -65,11 +63,12 @@ static bool ext_is_handled(const char *name)
     return false;
 }
 
-int scandir_cbk(const char* fullpath, const char* entryname, int attr) {
-
+int scandir_cbk(const char *fullpath, const char *entryname, uintptr_t ud)
+{
+    fenrir_user_data_t *fud = (fenrir_user_data_t *)ud;
     if (ext_is_handled(fullpath))
     {
-        uint32_t id = sd_dir_entries_count;
+        uint32_t id = fud->sd_dir_entries_count;
         strncpy(sd_dir_entries[id].filename, entryname, SD_MENU_FILENAME_LENGTH - 1);
         sd_dir_entries[id].id = __builtin_bswap16(id);
         sd_dir_entries[id].flag = 0;
@@ -79,7 +78,7 @@ int scandir_cbk(const char* fullpath, const char* entryname, int attr) {
         fs_cache[id].id = id;
         fs_cache[id].flag = 0;
 
-        sd_dir_entries_count++;
+        fud->sd_dir_entries_count++;
 
         log_info("add[%d]: %s %s", id, fullpath, entryname);
     }
@@ -87,67 +86,26 @@ int scandir_cbk(const char* fullpath, const char* entryname, int attr) {
     return 0;
 }
 
-
-static void tree_walk(fenrir_user_data_t* fenrir_user_data) {
-    tree_scandir(fenrir_user_data->image_path, scandir_cbk);
+static void tree_walk(fenrir_user_data_t *fenrir_user_data)
+{
+    tree_scandir(fenrir_user_data->image_path, scandir_cbk, (uintptr_t)fenrir_user_data);
 }
 
 void menu_http_handler_init(fenrir_user_data_t *fud)
 {
-    sd_dir_entries_count = 0;
+    fud->sd_dir_entries_count = 0;
     tree_walk(fud);
-}
-
-static uint32_t menu_http_handler(struct mg_connection *c, int ev, void *ev_data, void *fn_data)
-{
-    fenrir_user_data_t *fenrir_user_data = (fenrir_user_data_t *)fn_data;
-    struct mg_http_message *hm = (struct mg_http_message *)ev_data;
-
-    if (mg_vcasecmp(&hm->method, "HEAD") == 0)
-    {
-        mg_printf(c,
-                  "HTTP/1.0 200 OK\r\n"
-                  "entry-count: %lu\r\n"
-                  "Cache-Control: no-cache\r\n"
-                  "Content-Type: application/octet-stream\r\n"
-                  "Content-Length: %lu\r\n"
-                  "\r\n",
-                  sd_dir_entries_count,
-                  (unsigned long)sd_dir_entries_count * sizeof(sd_dir_entry_t));
-        c->is_draining = 1;
-        return -1;
-    }
-    else
-    {
-        uint32_t range_start = 0;
-        uint32_t range_end = 0;
-        http_get_range_header(hm, &range_start, &range_end);
-
-        mg_printf(c, "HTTP/1.1 206 OK\r\n"
-                     "Cache-Control: no-cache\r\n"
-                     "Content-Type: application/octet-stream\r\n"
-                     "Transfer-Encoding: chunked\r\n\r\n");
-
-        fenrir_user_data->sd_dir_entries_offset = range_start;
-        log_trace("Stream dir start at : %d", fenrir_user_data->sd_dir_entries_offset);
-        return 0;
-    }
 }
 
 static uint32_t menu_read_data(fenrir_user_data_t *fenrir_user_data)
 {
 
-    if (fenrir_user_data->sd_dir_entries_offset < (sd_dir_entries_count * sizeof(sd_dir_entry_t)))
+    if (fenrir_user_data->sd_dir_entries_offset < (fenrir_user_data->sd_dir_entries_count * sizeof(sd_dir_entry_t)))
     {
-        uint32_t max = (sd_dir_entries_count * sizeof(sd_dir_entry_t)) - fenrir_user_data->sd_dir_entries_offset;
+        uint32_t max = (fenrir_user_data->sd_dir_entries_count * sizeof(sd_dir_entry_t)) - fenrir_user_data->sd_dir_entries_offset;
         uint32_t sz = MIN(max, SECTOR_SIZE_2048);
         uintptr_t sd_dir_ptr = (uintptr_t)sd_dir_entries + fenrir_user_data->sd_dir_entries_offset;
         memcpy(fenrir_user_data->http_buffer, sd_dir_ptr, sz);
-
-        //log_debug("sd_dir_ptr : %p, inc: %d", sd_dir_ptr, sz);
-        //char *hex = mg_hexdump(sd_dir_ptr, sz);
-        //log_debug("sync_header %s", hex);
-        //free(hex);
 
         fenrir_user_data->sd_dir_entries_offset += sz;
         return 0;
@@ -156,6 +114,17 @@ static uint32_t menu_read_data(fenrir_user_data_t *fenrir_user_data)
     {
         return -1;
     }
+}
+
+int menu_get_filename_by_id(fenrir_user_data_t *fenrir_user_data, uint32_t id, char *filename)
+{
+    if (id <= fenrir_user_data->sd_dir_entries_count)
+    {
+        strcpy(filename, fs_cache[id].path);
+        return 0;
+    }
+
+    return -1;
 }
 
 static uint32_t menu_poll_handler(struct mg_connection *c, int ev, void *ev_data, void *fn_data)
@@ -177,15 +146,40 @@ static uint32_t menu_poll_handler(struct mg_connection *c, int ev, void *ev_data
     }
 }
 
-int menu_get_filename_by_id(uint32_t id, char *filename)
+static uint32_t menu_http_handler(struct mg_connection *c, int ev, void *ev_data, void *fn_data)
 {
-    if (id <= sd_dir_entries_count)
+    fenrir_user_data_t *fenrir_user_data = (fenrir_user_data_t *)fn_data;
+    struct mg_http_message *hm = (struct mg_http_message *)ev_data;
+
+    if (mg_vcasecmp(&hm->method, "HEAD") == 0)
     {
-        strcpy(filename, fs_cache[id].path);
+        mg_printf(c,
+                  "HTTP/1.0 200 OK\r\n"
+                  "entry-count: %lu\r\n"
+                  "Cache-Control: no-cache\r\n"
+                  "Content-Type: application/octet-stream\r\n"
+                  "Content-Length: %lu\r\n"
+                  "\r\n",
+                  fenrir_user_data->sd_dir_entries_count,
+                  (unsigned long)fenrir_user_data->sd_dir_entries_count * sizeof(sd_dir_entry_t));
+        c->is_draining = 1;
+        return -1;
+    }
+    else
+    {
+        uint32_t range_start = 0;
+        uint32_t range_end = 0;
+        http_get_range_header(hm, &range_start, &range_end);
+
+        mg_printf(c, "HTTP/1.1 206 OK\r\n"
+                     "Cache-Control: no-cache\r\n"
+                     "Content-Type: application/octet-stream\r\n"
+                     "Transfer-Encoding: chunked\r\n\r\n");
+
+        fenrir_user_data->sd_dir_entries_offset = range_start;
+        log_trace("Stream dir start at : %d", fenrir_user_data->sd_dir_entries_offset);
         return 0;
     }
-
-    return -1;
 }
 
 static const httpd_route_t httpd_route_menu = {
