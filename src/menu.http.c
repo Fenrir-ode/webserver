@@ -47,31 +47,6 @@ static fs_cache_t fs_cache[MAX_ENTITY];
 
 static uint32_t sd_dir_entries_count = 0;
 
-static void _printdirentry(const char *name, fenrir_user_data_t *fud)
-{
-    uint32_t id = sd_dir_entries_count;
-    size_t size = 0;
-    time_t mtime = 0;
-    uint32_t flags = 0;
-    char path[MG_PATH_MAX];
-
-    snprintf(path, sizeof(path), "%s%c%s", fud->image_path, '/', name);
-    flags = mg_fs_posix.stat(path, &size, &mtime);
-
-    strncpy(sd_dir_entries[id].filename, name, SD_MENU_FILENAME_LENGTH - 1);
-    sd_dir_entries[id].id = __builtin_bswap16(id);
-    sd_dir_entries[id].flag = __builtin_bswap32((flags & MG_FS_DIR) ? SD_DIR_FLAG_DIRECTORY : 0);
-
-    fs_cache[id].name = strdup(name);
-    fs_cache[id].path = strdup(path);
-    fs_cache[id].id = id;
-    fs_cache[id].flag = (flags & MG_FS_DIR) ? SD_DIR_FLAG_DIRECTORY : 0;
-
-    sd_dir_entries_count++;
-
-    log_info("add[%d]: %s %s", id, path, name);
-}
-
 static bool ext_is_handled(const char *name)
 {
     char *exts[] = {
@@ -120,8 +95,6 @@ static void tree_walk(fenrir_user_data_t* fenrir_user_data) {
 void menu_http_handler_init(fenrir_user_data_t *fud)
 {
     sd_dir_entries_count = 0;
-    // mg_fs_posix.list(fud->image_path, printdirentry, fud);
-
     tree_walk(fud);
 }
 

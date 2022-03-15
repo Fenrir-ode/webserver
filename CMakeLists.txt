@@ -16,8 +16,9 @@ ExternalProject_Add(ghc_fs
   GIT_REPOSITORY    https://github.com/gulrak/filesystem
   GIT_TAG           master
   PREFIX            "${CMAKE_BINARY_DIR}/ghc_fs"
-  CMAKE_ARGS        "-DINSTALL_STATIC_LIBS=On -GHC_FILESYSTEM_BUILD_TESTING=Off -DGHC_FILESYSTEM_BUILD_EXAMPLES=Off -DGHC_FILESYSTEM_WITH_INSTALL=Off"
-  INSTALL_COMMAND cmake -E echo "Skipping install step."
+  BUILD_COMMAND     cmake -E echo "Skipping build step."
+  CONFIGURE_COMMAND cmake -E echo "Skipping configure step."
+  INSTALL_COMMAND   cmake -E echo "Skipping install step."
 )
 
 include_directories(mongoose 
@@ -58,7 +59,7 @@ endif()
 
 add_executable(FenrirServer ${FenrirServerSrc} ${FenrirServerHdr})
 
-add_dependencies(FenrirServer libchdr)
+add_dependencies(FenrirServer libchdr ghc_fs)
 target_compile_definitions(FenrirServer PUBLIC  LOG_USE_COLOR)
 target_link_libraries(FenrirServer chdr-static lzma zlib)
 
