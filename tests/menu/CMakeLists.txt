@@ -1,3 +1,7 @@
+
+include(CodeCoverage.cmake)
+
+
 add_executable(TestMenu 
 ${CMAKE_SOURCE_DIR}/src/log.c
 ${CMAKE_SOURCE_DIR}/src/httpd.c
@@ -17,3 +21,6 @@ if(WIN32)
 endif()
 
 add_test(NAME TestMenu COMMAND TestMenu)
+target_code_coverage(TestMenu 
+EXCLUDE ${CMAKE_SOURCE_DIR}/src/log.c ${CMAKE_SOURCE_DIR}/tests/* ${CMAKE_SOURCE_DIR}/mongoose/* ${CMAKE_SOURCE_DIR}/src/httpd.c
+)
