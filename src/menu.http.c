@@ -127,7 +127,7 @@ int menu_get_filename_by_id(fenrir_user_data_t *fenrir_user_data, uint32_t id, c
     return -1;
 }
 
-static uint32_t menu_poll_handler(struct mg_connection *c, int ev, void *ev_data, void *fn_data)
+uint32_t menu_poll_handler(struct mg_connection *c, int ev, void *ev_data, void *fn_data)
 {
     fenrir_user_data_t *fenrir_user_data = (fenrir_user_data_t *)fn_data;
 
@@ -146,7 +146,7 @@ static uint32_t menu_poll_handler(struct mg_connection *c, int ev, void *ev_data
     }
 }
 
-static uint32_t menu_http_handler(struct mg_connection *c, int ev, void *ev_data, void *fn_data)
+ uint32_t menu_http_handler(struct mg_connection *c, int ev, void *ev_data, void *fn_data)
 {
     fenrir_user_data_t *fenrir_user_data = (fenrir_user_data_t *)fn_data;
     struct mg_http_message *hm = (struct mg_http_message *)ev_data;
