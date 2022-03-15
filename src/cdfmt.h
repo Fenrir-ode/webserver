@@ -6,6 +6,7 @@ extern "C"
 #endif
 
 #include <stdint.h>
+#include "pack.h"
 #define __MAX_PATH_LEN (4096)
 
 #define SECTOR_SIZE (2352)
@@ -68,19 +69,19 @@ extern "C"
         cdrom_track_info_t tracks[CD_MAX_TRACKS];
     } cdrom_toc_t;
 
-    typedef struct
-    {
-        uint8_t ctrladr;
-        uint8_t tno;
-        uint8_t point;
-        uint8_t min;
-        uint8_t sec;
-        uint8_t frame;
-        uint8_t zero;
-        uint8_t pmin;
-        uint8_t psec;
-        uint8_t pframe;
-    } raw_toc_dto_t;
+    typedef PACKED( struct
+           {
+               uint8_t ctrladr;
+               uint8_t tno;
+               uint8_t point;
+               uint8_t min;
+               uint8_t sec;
+               uint8_t frame;
+               uint8_t zero;
+               uint8_t pmin;
+               uint8_t psec;
+               uint8_t pframe;
+           } ) raw_toc_dto_t;
 
     typedef struct
     {

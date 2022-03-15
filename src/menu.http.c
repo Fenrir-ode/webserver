@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include "pack.h"
 //#include <ftw.h>
 //#include <libgen.h>
 #include "mongoose.h"
@@ -27,12 +28,13 @@
 #define MAX_ENTITY (3000)
 
 // 64bytes - fenrir fmt
-typedef struct
-{
-    uint16_t id;
-    uint32_t flag;
-    char filename[SD_MENU_FILENAME_LENGTH];
-} sd_dir_entry_t;
+typedef PACKED(
+    struct
+    {
+        uint16_t id;
+        uint32_t flag;
+        char filename[SD_MENU_FILENAME_LENGTH];
+    }) sd_dir_entry_t;
 
 typedef struct
 {
@@ -105,7 +107,7 @@ static uint32_t menu_read_data(fenrir_user_data_t *fenrir_user_data)
         uint32_t max = (fenrir_user_data->sd_dir_entries_count * sizeof(sd_dir_entry_t)) - fenrir_user_data->sd_dir_entries_offset;
         uint32_t sz = MIN(max, SECTOR_SIZE_2048);
         uintptr_t sd_dir_ptr = (uintptr_t)sd_dir_entries + fenrir_user_data->sd_dir_entries_offset;
-        memcpy(fenrir_user_data->http_buffer, sd_dir_ptr, sz);
+        memcpy(fenrir_user_data->http_buffer, (void*)sd_dir_ptr, sz);
 
         fenrir_user_data->sd_dir_entries_offset += sz;
         return 0;
@@ -146,7 +148,7 @@ uint32_t menu_poll_handler(struct mg_connection *c, int ev, void *ev_data, void 
     }
 }
 
- uint32_t menu_http_handler(struct mg_connection *c, int ev, void *ev_data, void *fn_data)
+uint32_t menu_http_handler(struct mg_connection *c, int ev, void *ev_data, void *fn_data)
 {
     fenrir_user_data_t *fenrir_user_data = (fenrir_user_data_t *)fn_data;
     struct mg_http_message *hm = (struct mg_http_message *)ev_data;

@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include "mongoose.h"
 #include <utest.h>
+#include "pack.h"
 #include "log.h"
 #include "cdfmt.h"
 #include "httpd.h"
@@ -16,6 +17,7 @@ uint32_t menu_http_handler(struct mg_connection* c, int ev, void* ev_data, void*
 
 struct fetch_data {
     char* buf;
+    char* cur;
     int code, closed;
 };
 static void fcb(struct mg_connection* c, int ev, void* ev_data, void* fn_data) {
@@ -31,16 +33,54 @@ static void fcb(struct mg_connection* c, int ev, void* ev_data, void* fn_data) {
     }
 } 
 
-static int fetch(struct mg_mgr* mgr, struct fetch_data *fd, const char* url,
+
+static int fetch(struct mg_mgr* mgr, struct fetch_data* fd, const char* url,
     const char* fmt, ...) {
     int i;
     struct mg_connection* c = mg_http_connect(mgr, url, fcb, fd);
-    va_list ap;    
+    va_list ap;
     va_start(ap, fmt);
     mg_vprintf(c, fmt, ap);
     va_end(ap);
     fd->buf[0] = '\0';
-    for (i = 0; i < 250 && fd->buf[0] == '\0'; i++) mg_mgr_poll(mgr, 1);
+    for (i = 0; i < 500 && fd->buf[0] == '\0'; i++) mg_mgr_poll(mgr, 1);
+    if (!fd->closed) c->is_closing = 1;
+    mg_mgr_poll(mgr, 1);
+    return fd->code;
+}
+
+static void fcb_poll(struct mg_connection* c, int ev, void* ev_data, void* fn_data) {
+    if (ev == MG_EV_HTTP_MSG) {
+        struct mg_http_message* hm = (struct mg_http_message*)ev_data;
+        struct fetch_data* fd = (struct fetch_data*)fn_data;
+        /*
+        snprintf(fd->buf, FETCH_BUF_SIZE, "%.*s", (int)hm->message.len,
+            hm->message.ptr);*/
+        fd->code = atoi(hm->uri.ptr); 
+        fd->closed = 1;
+        c->is_closing = 1;
+        (void)c;
+    }
+    if (ev == MG_EV_HTTP_CHUNK) {
+        struct mg_http_message* hm = (struct mg_http_message*)ev_data;
+        struct fetch_data* fd = (struct fetch_data*)fn_data;
+        memcpy(fd->cur, hm->chunk.ptr, hm->chunk.len);
+        fd->cur += (int)hm->chunk.len;
+        (void)c;
+    }
+}
+
+static int fetch_chunked(struct mg_mgr* mgr, struct fetch_data *fd, const char* url,
+    const char* fmt, ...) {
+    int i;
+    struct mg_connection* c = mg_http_connect(mgr, url, fcb_poll, fd);
+    va_list ap;    
+    fd->cur = fd->buf;
+    va_start(ap, fmt);
+    mg_vprintf(c, fmt, ap);
+    va_end(ap);
+    fd->buf[0] = '\0';
+    for (i = 0; i < 50 && fd->buf[0] == '\0'; i++) mg_mgr_poll(mgr, 1);
     if (!fd->closed) c->is_closing = 1;
     mg_mgr_poll(mgr, 1);
     return fd->code;
@@ -77,11 +117,49 @@ UTEST(menu, menu_head)
     mg_mgr_free(&mgr);
 }
 
+
+// 64bytes - fenrir fmt
+typedef PACKED(
+    struct
+    {
+        uint16_t id;
+        uint32_t flag;
+        char filename[58];
+    }) sd_dir_entry_t;
+
+UTEST(menu, menu_get)
+{
+    const char* url = "http://127.0.0.1:3000";
+    char buf[FETCH_BUF_SIZE];
+    struct fetch_data fd = { buf, 0, 0 };
+    struct mg_mgr mgr;
+    struct mg_http_message hm;
+    mg_mgr_init(&mgr);
+    httpd_init(&mgr);
+    menu_register_routes(&mgr);
+    mg_http_listen(&mgr, "http://0.0.0.0:3000", httpd_poll, (void*)&fud);
+    menu_http_handler_init(&fud);
+
+    const char* s = "GET /dir HTTP/1.0\r\n\n ";
+
+    ASSERT_EQ(fetch_chunked(&mgr, &fd, url, s), 206);
+    mg_http_parse(buf, strlen(buf), &hm);
+
+    sd_dir_entry_t* sd_dir_entries = (sd_dir_entry_t*)buf;
+
+    ASSERT_STREQ("game0", sd_dir_entries[0].filename);
+    ASSERT_STREQ("game1", sd_dir_entries[1].filename);
+    
+
+    mg_mgr_free(&mgr);
+}
+
+
 UTEST_STATE();
 
 int main(int argc, const char *const argv[])
 {
-    
+    fud.http_buffer = (uint8_t*)malloc(2352);
 
   return utest_main(argc, argv);
 }
