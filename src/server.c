@@ -2,10 +2,11 @@
 #include <signal.h>
 #include "mongoose.h"
 #include "log.h"
-// #include "libchdr/chd.h"
 #include "cdfmt.h"
+#include "fenrir.h"
 #include "httpd.h"
 #include "menu.http.h"
+#include "patch.h"
 
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
@@ -104,6 +105,13 @@ static uint32_t data_poll_handler(struct mg_connection *c, int ev, void *ev_data
 
   if (err == 0)
   {
+    if (fenrir_user_data->patch_region != -1 && fenrir_user_data->req_fad == 0) {
+      patch_region_0(fenrir_user_data->http_buffer, fenrir_user_data->patch_region);
+    }
+    if (fenrir_user_data->patch_region != -1 && fenrir_user_data->req_fad == 1) {
+      patch_region_1(fenrir_user_data->http_buffer, fenrir_user_data->patch_region);
+    }
+
     mg_http_write_chunk(c, fenrir_user_data->http_buffer, SECTOR_SIZE);
 #if 0 // POSTMAN_DBG
     mg_http_printf_chunk(c, ""); // postman dbg

@@ -7,6 +7,7 @@ extern "C"
 
 #include <stdint.h>
 #include "pack.h"
+
 #define __MAX_PATH_LEN (4096)
 
 #define SECTOR_SIZE (2352)
@@ -68,54 +69,6 @@ extern "C"
         uint32_t flags;   /* see FLAG_ above */
         cdrom_track_info_t tracks[CD_MAX_TRACKS];
     } cdrom_toc_t;
-
-    typedef PACKED( struct
-           {
-               uint8_t ctrladr;
-               uint8_t tno;
-               uint8_t point;
-               uint8_t min;
-               uint8_t sec;
-               uint8_t frame;
-               uint8_t zero;
-               uint8_t pmin;
-               uint8_t psec;
-               uint8_t pframe;
-           } ) raw_toc_dto_t;
-
-    typedef struct
-    {
-        // entry file name
-        char filename[__MAX_PATH_LEN];
-        char image_path[__MAX_PATH_LEN];
-
-        // chd or other image
-        uint8_t type;
-        // mame toc
-        cdrom_toc_t toc;
-        // chd file
-        chd_file *chd_file;
-        const chd_header *chd_header;
-        uint8_t *chd_hunk_buffer;
-        uint32_t sectors_per_hunk;
-        uint32_t cur_hunk;
-        // fenrir toc
-        raw_toc_dto_t toc_dto[CD_MAX_TRACKS + 3]; // 99 + 3 Metadata track
-        // streams
-        uint32_t req_fad;
-        uint32_t req_size;
-        uint8_t *http_buffer;
-        // dir
-        uint32_t sd_dir_entries_offset;
-        uint32_t sd_dir_entries_count;
-    } fenrir_user_data_t;
-
-    uint32_t cdfmt_parse_toc(const char *tocfname, fenrir_user_data_t *, raw_toc_dto_t *fenrir_toc);
-    uint32_t cdfmt_close(fenrir_user_data_t *fenrir_user_data);
-    uint32_t cdfmt_read_data(fenrir_user_data_t *fenrir_user_data, uint8_t *data, uint32_t fad, uint32_t size);
-
-    void fenrir_set_track(raw_toc_dto_t *fenrir_toc, uint8_t track, uint8_t ctrladr, uint32_t fad);
-    void fenrir_set_leadin_leadout(cdrom_toc_t *out_cdrom_toc, raw_toc_dto_t *fenrir_toc, uint8_t numtrks, uint32_t leadout);
 
 #ifdef __cplusplus
 }

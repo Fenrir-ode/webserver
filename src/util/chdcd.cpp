@@ -2043,6 +2043,7 @@ chd_error chdcd_parse_toc(const char *tocfname, cdrom_toc &outtoc, chdcd_track_i
     Wrapper
 -------------------------------------------------*/
 #include "../cdfmt.h"
+#include "../fenrir.h"
 
 static uint32_t cdrom_get_track_start(cdrom_toc *cdtoc, uint32_t track)
 {

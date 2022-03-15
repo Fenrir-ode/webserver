@@ -43,6 +43,7 @@ set(FenrirServerSrc
   src/httpd.c 
   src/log.c
   src/scandir.cpp
+  src/patch.c
 )
 
 file(GLOB_RECURSE FenrirServerHdr CONFIGURE_DEPENDS src/*.h)

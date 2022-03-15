@@ -4,6 +4,7 @@
 #include <string.h>
 #include "log.h"
 #include "cdfmt.h"
+#include "fenrir.h"
 #include "libchdr/chd.h"
 #include "libchdr/cdrom.h"
 

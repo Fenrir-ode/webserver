@@ -1,11 +1,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
-#include "mongoose.h"
 #include <utest.h>
-#include "pack.h"
-#include "log.h"
+#include "mongoose.h"
 #include "cdfmt.h"
+#include "fenrir.h"
+#include "log.h"
 #include "httpd.h"
 #include "scandir.h"
 #include "menu.http.h"
@@ -134,15 +134,6 @@ UTEST(menu, menu_head)
 
     mg_mgr_free(&mgr);
 }
-
-// 64bytes - fenrir fmt
-typedef PACKED(
-    struct
-    {
-        uint16_t id;
-        uint32_t flag;
-        char filename[58];
-    }) sd_dir_entry_t;
 
 UTEST(menu, menu_get)
 {

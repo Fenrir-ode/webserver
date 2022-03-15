@@ -4,6 +4,7 @@
 #include "log.h"
 // #include "libchdr/chd.h"
 #include "cdfmt.h"
+#include "fenrir.h"
 #include "httpd.h"
 #include "menu.http.h"
 // =============================================================
@@ -25,6 +26,8 @@ void usage(char *progname)
   printf("usage: %s [OPTION]\n", basename);
   printf("  -d, --dir\t\t"
          "CD Image directory to serve.\n");
+  printf(" -r --region (J, T, U, B, K, A, E, L)\t\t"
+         "Set console region.\n");
   printf("  --verbose\t"
          "Display more information.\n");
 }
@@ -32,6 +35,31 @@ void usage(char *progname)
 int server(fenrir_user_data_t *fenrir_user_data, int (*cbk)(void *), void *ud);
 
 static void noop() {}
+
+int get_image_region(char *r)
+{
+  const unsigned char region_code[] = {'J', 'T', 'U', 'B', 'K', 'A', 'E', 'L'};
+  const char *region_str[] = {
+    "Japan",
+    "Taiwan",
+    "USA",
+    "Brazil",
+    "Korea",
+    "Asia Pal",
+    "Europe",
+    "Latin America"};
+  for (int i = 0; i < sizeof(region_code); i++)
+  {
+    if ((r[0] | 0x40) == (region_code[i] | 0x40))
+    {
+      log_info("Patch region to %s", region_str[i]);
+      return i;
+    }
+  }
+  log_error("unknown region\n");
+  return -1;
+}
+
 int main(int argc, char *argv[])
 {
   struct mg_mgr mgr;
@@ -44,27 +72,31 @@ int main(int argc, char *argv[])
 
   // setup buffer
   http_buffer = (uint8_t *)malloc(4 * 2048);
-  if (http_buffer == NULL) {
-      log_error("Failled to allocate http buffer");
-      return -1;
+  if (http_buffer == NULL)
+  {
+    log_error("Failled to allocate http buffer");
+    return -1;
   }
-  fenrir_user_data_t* fenrir_user_data = (fenrir_user_data_t*)malloc(sizeof(fenrir_user_data_t));
-  if (fenrir_user_data == NULL) {
-      log_error("Failled to allocate fernrir user buffer");
-      return -1;
+  fenrir_user_data_t *fenrir_user_data = (fenrir_user_data_t *)malloc(sizeof(fenrir_user_data_t));
+  if (fenrir_user_data == NULL)
+  {
+    log_error("Failled to allocate fernrir user buffer");
+    return -1;
   }
   fenrir_user_data->http_buffer = http_buffer;
+  fenrir_user_data->patch_region = -1;
 
   // Parse options
 
   static const struct option long_options[] = {
       {"verbose", no_argument, &verbose_flag, 1},
       {"dir", required_argument, NULL, 'd'},
+      {"region", required_argument, NULL, 'r'},
       {0, 0, 0, 0}};
 
   while (1)
   {
-    c = getopt_long(argc, argv, "d:", long_options, &option_index);
+    c = getopt_long(argc, argv, "r:d:", long_options, &option_index);
     if (c == -1)
       break;
 
@@ -75,6 +107,9 @@ int main(int argc, char *argv[])
     case 'd':
       option_valid++;
       strcpy(fenrir_user_data->image_path, optarg);
+      break;
+    case 'r':
+      fenrir_user_data->patch_region = get_image_region(optarg);
       break;
     default:
       log_error("");

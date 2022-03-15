@@ -1,12 +1,12 @@
 #include <stdio.h>
 #include <string.h>
-#include "pack.h"
+#include "mongoose.h"
+#include "cdfmt.h"
+#include "fenrir.h"
 //#include <ftw.h>
 //#include <libgen.h>
-#include "mongoose.h"
 #include "log.h"
 // #include "libchdr/chd.h"
-#include "cdfmt.h"
 #include "httpd.h"
 #include "scandir.h"
 
@@ -23,18 +23,7 @@
 // =============================================================
 // Menu
 // =============================================================
-#define SD_MENU_FILENAME_LENGTH 58
-#define SD_DIR_FLAG_DIRECTORY (1 << 31)
 #define MAX_ENTITY (3000)
-
-// 64bytes - fenrir fmt
-typedef PACKED(
-    struct
-    {
-        uint16_t id;
-        uint32_t flag;
-        char filename[SD_MENU_FILENAME_LENGTH];
-    }) sd_dir_entry_t;
 
 typedef struct
 {

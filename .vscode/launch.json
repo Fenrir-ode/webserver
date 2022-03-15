@@ -10,9 +10,11 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/FenrirServer",
             "args": [
-                "--verbose",
                 "-d",
-                "/mnt/d/saturn/"
+                "/mnt/d/saturn/",
+                "-r",
+                "Ja",
+                "--verbose",
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build",
