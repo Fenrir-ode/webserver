@@ -26,12 +26,12 @@ static int _run(uintptr_t ud)
     return server_stopped;
 }
 
-server_events_t _server_events = {
+extern "C" server_events_t _server_events = {
     .ud = 0,
     .run = _run,
     .notify_add_game = NULL};
 
-server_events_t *server_events = &_server_events;
+extern "C" server_events_t *server_events = &_server_events;
 
 void FenrirServer::Init()
 {

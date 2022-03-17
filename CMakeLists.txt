@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.7)
 project(FenrirServer)
 include(ExternalProject)
 
+set(CMAKE_CXX_STANDARD 20)
+
 # Add libchr
 ExternalProject_Add(libchdr
   GIT_REPOSITORY    https://github.com/rtissera/libchdr
@@ -71,11 +73,18 @@ target_link_libraries(FenrirServer ${FenrirServerLibs})
 find_package(wxWidgets COMPONENTS net gl core base)
 if(wxWidgets_FOUND)
   include(${wxWidgets_USE_FILE}) 
-  add_executable(FenrirServerGui 
+  set(GUI_FLAGS "")
+
+if(WIN32)
+  set(GUI_FLAGS "WIN32")
+endif()
+
+  add_executable(FenrirServerGui ${GUI_FLAGS}
     src/wx-main.cpp 
     src/wx-widgets/app.cpp
     src/wx-widgets/server-intf.cpp
     ${FenrirServerSrc} ${FenrirServerHdr})
+  add_dependencies(FenrirServerGui libchdr ghc_fs)
   target_compile_definitions(FenrirServerGui PUBLIC LOG_USE_COLOR)
   target_link_libraries(FenrirServerGui ${FenrirServerLibs} ${wxWidgets_LIBRARIES})
 endif()
