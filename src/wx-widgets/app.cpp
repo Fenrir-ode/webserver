@@ -2,17 +2,15 @@
 #include <wx/panel.h>
 #include <wx/stdpaths.h>
 #include <wx/filepicker.h>
-
-BEGIN_EVENT_TABLE(Simple, wxFrame)
-  EVT_BUTTON(BUTTON_DirDialog, Simple::OnDialog)
-  EVT_DIRPICKER_CHANGED(DIR_PICKER_ID, Simple::OnPathChanged)
-  EVT_COMBOBOX(DIR_PICKER_ID, Simple::OnComboBox)  
-  EVT_BUTTON(BUTTON_Close,  Simple::OnQuit) 
-END_EVENT_TABLE()
+#include "server-intf.h"
 
 Simple::Simple(const wxString &title)
     : wxFrame(NULL, wxID_ANY, title, wxDefaultPosition, wxSize(250, 150))
 {
+  runningStatus = 0;
+  fenrirServer = new FenrirServer(this);
+  fenrirServer->Init();
+
   // Create a top-level panel to hold all the contents of the frame
   wxPanel *panel = new wxPanel(this, wxID_ANY);
 
@@ -45,6 +43,9 @@ Simple::Simple(const wxString &title)
 
   regionComboBox->Select(0);
 
+  gameList_ctrl = new wxListCtrl(panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_REPORT);
+  gameList_ctrl->InsertColumn(0, wxString::Format("Path"));
+
   // Set up the sizer for the panel
   wxBoxSizer *panelSizer = new wxBoxSizer(wxVERTICAL);
   panelSizer->Add(dirPickerCtrl, 0, wxEXPAND | wxALL, 5);
@@ -54,21 +55,20 @@ Simple::Simple(const wxString &title)
   panelSizer->AddSpacer(15);
   panelSizer->Add(regionPatchLabel, 0, wxEXPAND | wxLEFT, 5);
   panelSizer->Add(regionComboBox, 0, wxEXPAND | wxALL, 5);
-
+  panelSizer->Add(gameList_ctrl, 0, wxEXPAND | wxALL, 5);
 
   // Set up the sizer for the frame and resize the frame
   // according to its contents
 
   wxBoxSizer *btnBoxSizer = new wxBoxSizer(wxHORIZONTAL);
-  
-  wxButton *btn1 = new wxButton(panel, wxID_ANY, _("Ok"));
-  wxButton *btn2 = new wxButton(panel, wxID_ANY, _("Close"));
-  btnBoxSizer->Add(btn1, 0);
-  btnBoxSizer->Add(btn2, BUTTON_Close, wxLEFT | wxBOTTOM, 5);
+
+  run_btn = new wxButton(panel, BUTTON_Run, _("Run"));
+  close_btn = new wxButton(panel, BUTTON_Close, _("Close"));
+  btnBoxSizer->Add(run_btn, 0);
+  btnBoxSizer->Add(close_btn, 0, wxLEFT | wxBOTTOM, 5);
 
   panelSizer->AddSpacer(15);
   panelSizer->Add(btnBoxSizer, 0, wxALIGN_RIGHT | wxRIGHT | wxBOTTOM, 5);
-
 
   panel->SetSizer(panelSizer);
 
@@ -78,24 +78,21 @@ Simple::Simple(const wxString &title)
   Centre();
 }
 
+void Simple::OnRun(wxCommandEvent &event)
+{
+  fenrirServer->Run();
+}
+
 void Simple::OnComboBox(wxCommandEvent &event)
 {
+  // wxPostEvent()
 }
 
-void Simple::OnQuit(wxCommandEvent &evt) {
-  
-    Close(true);
-}
-
-void Simple::OnDialog(wxCommandEvent &event)
+void Simple::OnClose(wxCommandEvent &evt)
 {
-  wxDirDialog *d = new wxDirDialog(this, _("Choose a directory"),
-                                   _("."), 0, wxDefaultPosition);
-
-  if (d->ShowModal() == wxID_OK)
-  {
-    SetIsoDirectory(d->GetPath());
-  }
+  fenrirServer->StopServer();
+  // fenrirServer->Kill();
+  Close(true);
 }
 
 void Simple::OnPathChanged(wxFileDirPickerEvent &evt)
@@ -104,8 +101,54 @@ void Simple::OnPathChanged(wxFileDirPickerEvent &evt)
   {
     isoDirectoryText_ctrl->SetValue(evt.GetPath());
   }
+
+  SetIsoDirectory(evt.GetPath());
 }
 
 void Simple::SetIsoDirectory(wxString dir)
 {
+  // wxLogMessage("Hello world from wxWidgets!");
+  fenrirServer->SetIsoDirectory(dir);
 }
+
+void Simple::OnServerEvent(wxCommandEvent &evt)
+{
+  // wxLogError("OnServerEvent");
+  switch (evt.GetInt())
+  {
+  case FENRIR_SERVER_EVENT_TYPE_PENDING:
+    runningStatus = FENRIR_SERVER_EVENT_TYPE_PENDING;
+    run_btn->Enable(false);
+    // close_btn->Enable(false);
+    break;
+  case FENRIR_SERVER_EVENT_TYPE_RUN:
+    run_btn->Enable(false);
+    // close_btn->Enable(false);
+    runningStatus = FENRIR_SERVER_EVENT_TYPE_RUN;
+    break;
+  case FENRIR_SERVER_EVENT_TYPE_STOPPED:
+    run_btn->Enable(false);
+    // close_btn->Enable(false);
+    runningStatus = FENRIR_SERVER_EVENT_TYPE_STOPPED;
+    break;
+  case FENRIR_SERVER_EVENT_TYPE_NOTIFY_GAME:
+  {
+    wxListItem col0;
+    col0.SetId(0);
+    col0.SetText(wxString(evt.GetString()));
+    col0.SetWidth(50);
+    gameList_ctrl->InsertItem(col0);
+  }
+  break;
+  default:
+    break;
+  }
+}
+
+BEGIN_EVENT_TABLE(Simple, wxFrame)
+EVT_DIRPICKER_CHANGED(DIR_PICKER_ID, Simple::OnPathChanged)
+EVT_COMBOBOX(DIR_PICKER_ID, Simple::OnComboBox)
+EVT_BUTTON(BUTTON_Close, Simple::OnClose)
+EVT_BUTTON(BUTTON_Run, Simple::OnRun)
+EVT_COMMAND(wxID_ANY, FENRIR_SERVER_EVENT, Simple::OnServerEvent)
+END_EVENT_TABLE()

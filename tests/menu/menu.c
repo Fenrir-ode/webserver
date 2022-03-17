@@ -3,12 +3,19 @@
 #include <stdint.h>
 #include <utest.h>
 #include "mongoose.h"
+#include "server.h"
 #include "cdfmt.h"
 #include "fenrir.h"
 #include "log.h"
 #include "httpd.h"
 #include "scandir.h"
 #include "menu.http.h"
+
+static server_events_t _server_events = {
+    .ud = 0,
+    .run = NULL,
+    .notify_add_game = NULL};
+server_events_t *server_events = &_server_events;
 
 static int test_scandir_long = 0;
 

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "mongoose.h"
+#include "server.h"
 #include "cdfmt.h"
 #include "fenrir.h"
 //#include <ftw.h>
@@ -9,6 +10,8 @@
 // #include "libchdr/chd.h"
 #include "httpd.h"
 #include "scandir.h"
+
+extern server_events_t *server_events;
 
 #ifdef _MSC_VER
 #define __builtin_bswap16 _byteswap_ushort
@@ -23,19 +26,6 @@
 // =============================================================
 // Menu
 // =============================================================
-#define MAX_ENTITY (3000)
-
-typedef struct
-{
-    uint16_t id;
-    uint32_t flag;
-    char *path;
-    char *name;
-} fs_cache_t;
-
-static sd_dir_entry_t sd_dir_entries[MAX_ENTITY];
-static fs_cache_t fs_cache[MAX_ENTITY];
-
 static bool ext_is_handled(const char *name)
 {
     char *exts[] = {
@@ -60,18 +50,21 @@ int scandir_cbk(const char *fullpath, const char *entryname, uintptr_t ud)
     if (ext_is_handled(fullpath))
     {
         uint32_t id = fud->sd_dir_entries_count;
-        strncpy(sd_dir_entries[id].filename, entryname, SD_MENU_FILENAME_LENGTH - 1);
-        sd_dir_entries[id].id = __builtin_bswap16(id);
-        sd_dir_entries[id].flag = 0;
+        strncpy(fud->sd_dir_entries[id].filename, entryname, SD_MENU_FILENAME_LENGTH - 1);
+        fud->sd_dir_entries[id].id = __builtin_bswap16(id);
+        fud->sd_dir_entries[id].flag = 0;
 
-        fs_cache[id].name = strdup(entryname);
-        fs_cache[id].path = strdup(fullpath);
-        fs_cache[id].id = id;
-        fs_cache[id].flag = 0;
+        fud->fs_cache[id].name = strdup(entryname);
+        fud->fs_cache[id].path = strdup(fullpath);
+        fud->fs_cache[id].id = id;
+        fud->fs_cache[id].flag = 0;
 
         fud->sd_dir_entries_count++;
 
         log_info("add[%d]: %s %s", id, fullpath, entryname);
+
+        if (server_events->notify_add_game)
+            server_events->notify_add_game(server_events->ud, fullpath);
     }
 
     return 0;
@@ -96,7 +89,7 @@ static uint32_t menu_read_data(fenrir_user_data_t *fenrir_user_data)
     {
         uint32_t max = (fenrir_user_data->sd_dir_entries_count * sizeof(sd_dir_entry_t)) - fenrir_user_data->sd_dir_entries_offset;
         uint32_t sz = MIN(max, SECTOR_SIZE_2048);
-        uintptr_t sd_dir_ptr = (uintptr_t)sd_dir_entries + fenrir_user_data->sd_dir_entries_offset;
+        uintptr_t sd_dir_ptr = (uintptr_t)fenrir_user_data->sd_dir_entries + fenrir_user_data->sd_dir_entries_offset;
         memcpy(fenrir_user_data->http_buffer, (void *)sd_dir_ptr, sz);
 
         fenrir_user_data->sd_dir_entries_offset += sz;
@@ -112,7 +105,7 @@ int menu_get_filename_by_id(fenrir_user_data_t *fenrir_user_data, uint32_t id, c
 {
     if (id <= fenrir_user_data->sd_dir_entries_count)
     {
-        strcpy(filename, fs_cache[id].path);
+        strcpy(filename, fenrir_user_data->fs_cache[id].path);
         return 0;
     }
 

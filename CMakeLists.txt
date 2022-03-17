@@ -74,6 +74,7 @@ if(wxWidgets_FOUND)
   add_executable(FenrirServerGui 
     src/wx-main.cpp 
     src/wx-widgets/app.cpp
+    src/wx-widgets/server-intf.cpp
     ${FenrirServerSrc} ${FenrirServerHdr})
   target_compile_definitions(FenrirServerGui PUBLIC LOG_USE_COLOR)
   target_link_libraries(FenrirServerGui ${FenrirServerLibs} ${wxWidgets_LIBRARIES})

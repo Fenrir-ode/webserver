@@ -7,6 +7,8 @@
 #include "httpd.h"
 #include "menu.http.h"
 #include "patch.h"
+#include "server.h"
+extern server_events_t *server_events;
 
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
@@ -105,10 +107,12 @@ static uint32_t data_poll_handler(struct mg_connection *c, int ev, void *ev_data
 
   if (err == 0)
   {
-    if (fenrir_user_data->patch_region != -1 && fenrir_user_data->req_fad == 0) {
+    if (fenrir_user_data->patch_region != -1 && fenrir_user_data->req_fad == 0)
+    {
       patch_region_0(fenrir_user_data->http_buffer, fenrir_user_data->patch_region);
     }
-    if (fenrir_user_data->patch_region != -1 && fenrir_user_data->req_fad == 1) {
+    if (fenrir_user_data->patch_region != -1 && fenrir_user_data->req_fad == 1)
+    {
       patch_region_1(fenrir_user_data->http_buffer, fenrir_user_data->patch_region);
     }
 
@@ -148,7 +152,32 @@ static void sig_handler(int unused)
   sig_end = 0;
 }
 
-int server(fenrir_user_data_t *fenrir_user_data, int (*cbk)(void *), void *ud)
+
+int get_image_region(char *r)
+{
+  const unsigned char region_code[] = {'J', 'T', 'U', 'B', 'K', 'A', 'E', 'L'};
+  const char *region_str[] = {
+      "Japan",
+      "Taiwan",
+      "USA",
+      "Brazil",
+      "Korea",
+      "Asia Pal",
+      "Europe",
+      "Latin America"};
+  for (int i = 0; i < sizeof(region_code); i++)
+  {
+    if ((r[0] | 0x40) == (region_code[i] | 0x40))
+    {
+      log_info("Patch region to %s", region_str[i]);
+      return i;
+    }
+  }
+  log_error("unknown region\n");
+  return -1;
+}
+
+int server(fenrir_user_data_t *fenrir_user_data)
 {
   struct mg_mgr mgr;
   struct mg_timer t1;
@@ -171,8 +200,11 @@ int server(fenrir_user_data_t *fenrir_user_data, int (*cbk)(void *), void *ud)
   while (sig_end)
   {
     mg_mgr_poll(&mgr, 50);
-    if (cbk)
-      cbk(ud);
+    if (server_events->run) {
+      if (server_events->run(server_events->ud) != 0) {
+        break;
+      }
+    }
   }
 
   // exit

@@ -7,6 +7,14 @@
 #include "fenrir.h"
 #include "httpd.h"
 #include "menu.http.h"
+#include "server.h"
+
+static int noop() {return 0;}
+
+server_events_t server_events = {
+    .run = noop,
+    .ud = NULL};
+
 // =============================================================
 // main
 // =============================================================
@@ -30,34 +38,6 @@ void usage(char *progname)
          " (J, T, U, B, K, A, E, L)\tSet console region.\n");
   printf("  --verbose\t"
          "Display more information.\n");
-}
-
-int server(fenrir_user_data_t *fenrir_user_data, int (*cbk)(void *), void *ud);
-
-static void noop() {}
-
-int get_image_region(char *r)
-{
-  const unsigned char region_code[] = {'J', 'T', 'U', 'B', 'K', 'A', 'E', 'L'};
-  const char *region_str[] = {
-    "Japan",
-    "Taiwan",
-    "USA",
-    "Brazil",
-    "Korea",
-    "Asia Pal",
-    "Europe",
-    "Latin America"};
-  for (int i = 0; i < sizeof(region_code); i++)
-  {
-    if ((r[0] | 0x40) == (region_code[i] | 0x40))
-    {
-      log_info("Patch region to %s", region_str[i]);
-      return i;
-    }
-  }
-  log_error("unknown region\n");
-  return -1;
 }
 
 int main(int argc, char *argv[])
@@ -132,7 +112,7 @@ int main(int argc, char *argv[])
     log_set_level(LOG_ERROR);
   }
 
-  server(fenrir_user_data, noop, NULL);
+  server(fenrir_user_data);
 
   free(http_buffer);
   free(fenrir_user_data);

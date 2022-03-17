@@ -7,10 +7,10 @@
 #include "fenrir.h"
 #include "httpd.h"
 #include "menu.http.h"
+#include "server.h"
 
 #include <wx/wx.h>
 #include "wx-widgets/app.h"
-
 
 class MyApp : public wxApp
 {
@@ -22,10 +22,11 @@ public:
 
     return true;
   }
+
+  
 };
 
 IMPLEMENT_APP(MyApp)
-
 
 int __main(int argc, char *argv[])
 {

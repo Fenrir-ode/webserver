@@ -49,6 +49,7 @@
         "cdfmt.h": "c",
         "chd.h": "c",
         "ranges": "c",
-        "ftw.h": "c"
+        "ftw.h": "c",
+        "list": "cpp"
     }
 }
