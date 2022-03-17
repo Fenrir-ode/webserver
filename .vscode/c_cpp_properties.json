@@ -6,7 +6,9 @@
                 "${default}",
                 "${workspaceFolder}/src",                
                 "${workspaceFolder}/tests",
-                "${workspaceFolder}/mongoose"
+                "${workspaceFolder}/mongoose",
+                "/usr/include/wx-3.0/",
+                "/usr/lib/x86_64-linux-gnu/wx/include/gtk3-unicode-3.0"
             ],
             "compilerPath": "/usr/bin/gcc",
             "cStandard": "gnu17",

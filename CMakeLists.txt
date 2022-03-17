@@ -25,6 +25,7 @@ include_directories(mongoose
 "${CMAKE_BINARY_DIR}/libchdr/src/libchdr/include"
 "${CMAKE_BINARY_DIR}/ghc_fs/src/ghc_fs/include"
  )
+
 link_directories(
   ${CMAKE_BINARY_DIR}/libchdr/src/libchdr-build
   ${CMAKE_BINARY_DIR}/libchdr/src/libchdr-build/deps/zlib-1.2.11
@@ -38,7 +39,6 @@ set(FenrirServerSrc
   src/util/util.cpp
   src/cdfmt.c 
   src/server.c 
-  src/cli-main.c 
   src/menu.http.c 
   src/httpd.c 
   src/log.c
@@ -58,14 +58,25 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 
 endif()
 
-add_executable(FenrirServer ${FenrirServerSrc} ${FenrirServerHdr})
-
-add_dependencies(FenrirServer libchdr ghc_fs)
-target_compile_definitions(FenrirServer PUBLIC  LOG_USE_COLOR)
-target_link_libraries(FenrirServer chdr-static lzma zlib)
-
+set(FenrirServerLibs chdr-static lzma zlib)
 if(WIN32)
-  target_link_libraries(FenrirServer chdr-static lzma zlib wsock32 ws2_32)
+  set(FenrirServerLibs ${FenrirServerLibs} wsock32 ws2_32)
+endif()
+
+add_executable(FenrirServer src/cli-main.c  ${FenrirServerSrc} ${FenrirServerHdr})
+add_dependencies(FenrirServer libchdr ghc_fs)
+target_compile_definitions(FenrirServer PUBLIC LOG_USE_COLOR)
+target_link_libraries(FenrirServer ${FenrirServerLibs})
+
+find_package(wxWidgets COMPONENTS net gl core base)
+if(wxWidgets_FOUND)
+  include(${wxWidgets_USE_FILE}) 
+  add_executable(FenrirServerGui 
+    src/wx-main.cpp 
+    src/wx-widgets/app.cpp
+    ${FenrirServerSrc} ${FenrirServerHdr})
+  target_compile_definitions(FenrirServerGui PUBLIC LOG_USE_COLOR)
+  target_link_libraries(FenrirServerGui ${FenrirServerLibs} ${wxWidgets_LIBRARIES})
 endif()
 
 install(TARGETS FenrirServer DESTINATION bin)
@@ -73,3 +84,4 @@ install(TARGETS FenrirServer DESTINATION bin)
 # tests
 enable_testing()
 add_subdirectory (tests/menu)
+

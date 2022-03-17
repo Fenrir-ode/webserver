@@ -26,8 +26,8 @@ void usage(char *progname)
   printf("usage: %s [OPTION]\n", basename);
   printf("  -d, --dir\t\t"
          "CD Image directory to serve.\n");
-  printf(" -r --region (J, T, U, B, K, A, E, L)\t\t"
-         "Set console region.\n");
+  printf("  -r --region\t\t"
+         " (J, T, U, B, K, A, E, L)\tSet console region.\n");
   printf("  --verbose\t"
          "Display more information.\n");
 }
