@@ -29,7 +29,7 @@ extern server_events_t *server_events;
 static bool ext_is_handled(const char *name)
 {
     char *exts[] = {
-        ".iso", ".cue", ".chdr", ".gdi", ".nrg", NULL};
+        ".iso", ".cue", ".chdr",".chd", ".gdi", ".nrg", NULL};
 
     char *file_ext = strchr(name, '.');
     if (file_ext)

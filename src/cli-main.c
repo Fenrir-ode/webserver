@@ -11,9 +11,12 @@
 
 static int noop() {return 0;}
 
-server_events_t server_events = {
+static server_events_t _server_events = {
     .run = noop,
+    .notify_add_game = NULL,
     .ud = NULL};
+
+server_events_t* server_events = &_server_events;
 
 // =============================================================
 // main
