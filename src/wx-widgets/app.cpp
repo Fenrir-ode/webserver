@@ -2,6 +2,7 @@
 #include <wx/panel.h>
 #include <wx/stdpaths.h>
 #include <wx/filepicker.h>
+#include <wx/filename.h>
 #include "server-intf.h"
 
 Simple::Simple(const wxString &title)
@@ -23,19 +24,18 @@ Simple::Simple(const wxString &title)
   wxStaticText *regionPatchLabel = new wxStaticText(panel, wxID_ANY, "Region patch:");
   isoDirectoryText_ctrl = new wxTextCtrl(panel, wxID_ANY);
 
-  wxComboBox *regionComboBox = new wxComboBox(panel, COMBO_REGION_ID, wxEmptyString, {10, 10});
+  regionComboBox = new wxComboBox(panel, COMBO_REGION_ID, wxEmptyString, {10, 10});
 
-  wxString region_str[] = {
-      _("Japan"),
-      _("Taiwan"),
-      _("USA"),
-      _("Brazil"),
-      _("Korea"),
-      _("Asia Pal"),
-      _("Europe"),
-      _("Latin America")};
+  wxString region_str[] = {_("Disabled"),
+                           _("Japan"),
+                           _("Taiwan"),
+                           _("USA"),
+                           _("Brazil"),
+                           _("Korea"),
+                           _("Asia Pal"),
+                           _("Europe"),
+                           _("Latin America")};
 
-  regionComboBox->Append(_("Disabled"));
   for (int i = 0; i < sizeof(region_str) / sizeof(wxString); i++)
   {
     regionComboBox->Append(region_str[i]);
@@ -43,8 +43,8 @@ Simple::Simple(const wxString &title)
 
   regionComboBox->Select(0);
 
-  gameList_ctrl = new wxListCtrl(panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_REPORT);
-  gameList_ctrl->InsertColumn(0, wxString::Format("Path"));
+  gameList_ctrl = new wxListView (panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_REPORT|wxLC_SINGLE_SEL);
+  gameList_ctrl->InsertColumn(0, wxString::Format("Path") , wxLIST_FORMAT_LEFT, 300);
 
   // Set up the sizer for the panel
   wxBoxSizer *panelSizer = new wxBoxSizer(wxVERTICAL);
@@ -85,7 +85,10 @@ void Simple::OnRun(wxCommandEvent &event)
 
 void Simple::OnComboBox(wxCommandEvent &event)
 {
+
   // wxPostEvent()
+//  int r = event.GetSelection();
+  fenrirServer->SetRegionPatch(regionComboBox->GetStringSelection());
 }
 
 void Simple::OnClose(wxCommandEvent &evt)
@@ -133,10 +136,10 @@ void Simple::OnServerEvent(wxCommandEvent &evt)
     break;
   case FENRIR_SERVER_EVENT_TYPE_NOTIFY_GAME:
   {
+    wxFileName filename(evt.GetString());
     wxListItem col0;
     col0.SetId(0);
-    col0.SetText(wxString(evt.GetString()));
-    col0.SetWidth(50);
+    col0.SetText(filename.GetName());
     gameList_ctrl->InsertItem(col0);
   }
   break;
@@ -147,7 +150,7 @@ void Simple::OnServerEvent(wxCommandEvent &evt)
 
 BEGIN_EVENT_TABLE(Simple, wxFrame)
 EVT_DIRPICKER_CHANGED(DIR_PICKER_ID, Simple::OnPathChanged)
-EVT_COMBOBOX(DIR_PICKER_ID, Simple::OnComboBox)
+EVT_COMBOBOX(COMBO_REGION_ID, Simple::OnComboBox)
 EVT_BUTTON(BUTTON_Close, Simple::OnClose)
 EVT_BUTTON(BUTTON_Run, Simple::OnRun)
 EVT_COMMAND(wxID_ANY, FENRIR_SERVER_EVENT, Simple::OnServerEvent)

@@ -75,11 +75,10 @@ bool FenrirServer::Joinable()
     return server_th.joinable();
 }
 
-void FenrirServer::SetRegionPatch(int r)
+void FenrirServer::SetRegionPatch(wxString r)
 {
-    char region[1] = {(char)r};
-
-    fenrir_user_data->patch_region = get_image_region(region);
+    wxCharBuffer region=r.ToUTF8();
+    fenrir_user_data->patch_region = get_image_region(region.data());
 }
 
 void FenrirServer::SetIsoDirectory(wxString directory)

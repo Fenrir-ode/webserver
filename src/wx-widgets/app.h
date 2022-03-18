@@ -10,10 +10,12 @@
 class Simple : public wxFrame
 {
     wxTextCtrl *isoDirectoryText_ctrl;
-    wxListCtrl *gameList_ctrl;
+    wxListView  *gameList_ctrl;
+    wxComboBox *regionComboBox;
 
     wxButton *run_btn;
     wxButton *close_btn;
+
 public:
     Simple(const wxString &title);
 
