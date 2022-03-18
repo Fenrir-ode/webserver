@@ -11,7 +11,7 @@
             "program": "${workspaceFolder}/build/FenrirServer",
             "args": [
                 "-d",
-                "/mnt/d/saturn/",
+                "/mnt/d/chd/",
                 "-r",
                 "Ja",
                 "--verbose",
@@ -42,7 +42,7 @@
             "program": "${workspaceFolder}/build/FenrirServerGui",
             "args": [
                 "-d",
-                "/mnt/d/saturn/",
+                "/mnt/d/chd/",
                 "-r",
                 "Ja",
                 "--verbose",

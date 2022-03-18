@@ -50,6 +50,9 @@
         "chd.h": "c",
         "ranges": "c",
         "ftw.h": "c",
-        "list": "cpp"
+        "list": "cpp",
+        "hash_map": "c",
+        "bitset": "c",
+        "regex": "c"
     }
 }

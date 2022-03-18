@@ -173,6 +173,7 @@ static uint32_t chd_parse_toc(const char *tocfname, fenrir_user_data_t *fenrir_u
 {
     cdrom_toc_t *toc = &fenrir_ud->toc;
     chd_error err;
+
     if ((err = chd_open(tocfname, CHD_OPEN_READ, NULL, &fenrir_ud->chd_file)) == CHDERR_NONE)
 
     {
@@ -217,6 +218,7 @@ static uint32_t chd_parse_toc(const char *tocfname, fenrir_user_data_t *fenrir_u
                 break;
             }
 
+
             log_info("track: %d / frame: %d / type:%s", track, frames, type);
 
             int padded = (frames + CD_TRACK_PADDING - 1) / CD_TRACK_PADDING;
@@ -258,9 +260,9 @@ static uint32_t chd_parse_toc(const char *tocfname, fenrir_user_data_t *fenrir_u
 
             numtrks++;
         }
-        print_raw_toc(fenrir_toc, numtrks);
+
         chd_fenrir_set_leadin_leadout(fenrir_toc, numtrks, toc->tracks[numtrks - 1].logframeofs + 150);
-        print_raw_toc(fenrir_toc, numtrks);
+        // print_raw_toc(fenrir_toc, numtrks);
         fenrir_ud->toc.numtrks = numtrks;
 
         return 0;
@@ -312,7 +314,7 @@ uint32_t cdfmt_read_data(fenrir_user_data_t *fenrir_user_data, uint8_t *data, ui
         cdrom_track_info_t *track_info = &fenrir_user_data->toc.tracks[track];
 
         uint64_t offset = track_info->offset + (fad - track_info->logframeofs) * track_info->datasize;
-        log_trace("read at: %08x", offset);
+        //log_trace("read at: %08x", offset);
 
         if (fseek(track_info->fp, offset, SEEK_SET) == 0)
         {
@@ -358,7 +360,7 @@ uint32_t cdfmt_read_data(fenrir_user_data_t *fenrir_user_data, uint8_t *data, ui
         uint32_t hunknumber = (fad) / fenrir_user_data->sectors_per_hunk;
         uint32_t hunkoffset = (fad) % fenrir_user_data->sectors_per_hunk;
 
-        log_debug("chdread at: %08x/%08x (%d)", hunknumber, hunkoffset, fad);
+        // log_debug("chdread at: %08x/%08x (%d)", hunknumber, hunkoffset, fad);
         if (fenrir_user_data->cur_hunk != hunknumber)
         {
             chd_error err = chd_read(fenrir_user_data->chd_file, hunknumber, fenrir_user_data->chd_hunk_buffer);

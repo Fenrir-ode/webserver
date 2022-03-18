@@ -35,7 +35,7 @@ extern "C" server_events_t *server_events = &_server_events;
 
 void FenrirServer::Init()
 {
-    fenrir_user_data = (fenrir_user_data_t *)malloc(sizeof(fenrir_user_data_t));
+    fenrir_user_data = (fenrir_user_data_t *)calloc(sizeof(fenrir_user_data_t), 1);
     if (fenrir_user_data == NULL)
     {
         wxLogError(_T("Failled to allocate fernrir user buffer"));

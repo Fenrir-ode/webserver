@@ -8,6 +8,10 @@
 #include "menu.http.h"
 #include "patch.h"
 #include "server.h"
+#define XXH_STATIC_LINKING_ONLY   /* access advanced declarations */
+#define XXH_IMPLEMENTATION   /* access definitions */
+#include "xxHash/xxhash.h"
+
 extern server_events_t *server_events;
 
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
@@ -47,6 +51,10 @@ static uint32_t toc_http_handler(struct mg_connection *c, int ev, void *ev_data,
               "Content-Type: application/octet-stream\r\n"
               "Content-Length: %lu\r\n\r\n",
               (unsigned long)sz);
+
+    //XXH32_hash_t hash = XXH32(fenrir_user_data->toc_dto, sz, 0);
+    //log_debug("toc hash: %08x\n", hash);
+
 
     mg_send(c, fenrir_user_data->toc_dto, sz);
     return 0;
@@ -115,6 +123,9 @@ static uint32_t data_poll_handler(struct mg_connection *c, int ev, void *ev_data
     {
       patch_region_1(fenrir_user_data->http_buffer, fenrir_user_data->patch_region);
     }
+
+    //XXH32_hash_t hash = XXH32(fenrir_user_data->http_buffer, SECTOR_SIZE, 0);
+    //log_debug("sector[%08x] hash: %08x", fenrir_user_data->req_fad, hash);
 
     mg_http_write_chunk(c, fenrir_user_data->http_buffer, SECTOR_SIZE);
 #if 0 // POSTMAN_DBG

@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
     log_error("Failled to allocate http buffer");
     return -1;
   }
-  fenrir_user_data_t *fenrir_user_data = (fenrir_user_data_t *)malloc(sizeof(fenrir_user_data_t));
+  fenrir_user_data_t *fenrir_user_data = (fenrir_user_data_t *)calloc(sizeof(fenrir_user_data_t), 1);
   if (fenrir_user_data == NULL)
   {
     log_error("Failled to allocate fernrir user buffer");
@@ -106,8 +106,10 @@ int main(int argc, char *argv[])
     exit(-1);
   }
 
+  FILE * flog=fopen("fenrir.log", "wb");
   if (verbose_flag)
   {
+    log_add_fp(flog, LOG_DEBUG);
     log_set_level(LOG_TRACE);
   }
   else
