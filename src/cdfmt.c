@@ -142,6 +142,29 @@ void fenrir_set_leadin_leadout(cdrom_toc_t *out_cdrom_toc, raw_toc_dto_t *fenrir
 
     chd_fenrir_set_leadin_leadout(fenrir_toc, numtrks, leadout);
 }
+// =============================================================
+// debug
+// =============================================================
+void print_raw_toc(raw_toc_dto_t *toc, uint8_t numtrks)
+{
+#define DUMP_M(x) log_debug("\t" #x ": %02x", toc[i].x);
+    log_debug("dump toc");
+    for (uint8_t i = 0; i < numtrks + 3; i++)
+    {
+        log_debug("track: %d", i);
+        DUMP_M(ctrladr);
+        DUMP_M(tno);
+        DUMP_M(point);
+        DUMP_M(min);
+        DUMP_M(sec);
+        DUMP_M(frame);
+        DUMP_M(zero);
+        DUMP_M(pmin);
+        DUMP_M(psec);
+        DUMP_M(pframe);
+    }
+#undef DUMP_M
+}
 
 // =============================================================
 // parse toc
@@ -235,8 +258,9 @@ static uint32_t chd_parse_toc(const char *tocfname, fenrir_user_data_t *fenrir_u
 
             numtrks++;
         }
-
+        print_raw_toc(fenrir_toc, numtrks);
         chd_fenrir_set_leadin_leadout(fenrir_toc, numtrks, toc->tracks[numtrks - 1].logframeofs + 150);
+        print_raw_toc(fenrir_toc, numtrks);
         fenrir_ud->toc.numtrks = numtrks;
 
         return 0;
@@ -255,6 +279,8 @@ uint32_t cdfmt_parse_toc(const char *tocfname, fenrir_user_data_t *fenrir_ud, ra
     {
         fenrir_ud->type = IMAGE_TYPE_MAME_LDR;
         uint32_t mame_toc = mame_parse_toc(tocfname, &fenrir_ud->toc, fenrir_toc);
+
+        print_raw_toc(fenrir_toc, fenrir_ud->toc.numtrks);
         if (mame_toc == 0)
         {
             if (fenrir_ud->toc.numtrks == 1)
@@ -354,7 +380,7 @@ uint32_t cdfmt_read_data(fenrir_user_data_t *fenrir_user_data, uint8_t *data, ui
 // Close all alocated ressources
 // =============================================================
 uint32_t cdfmt_close(fenrir_user_data_t *fenrir_user_data)
-{    
+{
     if (fenrir_user_data->type == IMAGE_TYPE_MAME_LDR)
     {
         for (int i = 0; i < fenrir_user_data->toc.numtrks; i++)
@@ -365,7 +391,8 @@ uint32_t cdfmt_close(fenrir_user_data_t *fenrir_user_data)
     else if (fenrir_user_data->type == IMAGE_TYPE_CHD)
     {
         chd_close(fenrir_user_data->chd_file);
-        if (fenrir_user_data->chd_hunk_buffer) {
+        if (fenrir_user_data->chd_hunk_buffer)
+        {
             free(fenrir_user_data->chd_hunk_buffer);
         }
     }
