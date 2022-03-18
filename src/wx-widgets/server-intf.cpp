@@ -42,10 +42,9 @@ void FenrirServer::Init()
         exit(-1);
     }
 
+    server_stopped = 0;
     fenrir_user_data->http_buffer = (uint8_t *)malloc(4 * 2048);
     fenrir_user_data->patch_region = -1;
-
-    server_stopped = 0;
 
     auto notifier = [](uintptr_t ud, char *gamename)
     {
@@ -77,7 +76,7 @@ bool FenrirServer::Joinable()
 
 void FenrirServer::SetRegionPatch(wxString r)
 {
-    wxCharBuffer region=r.ToUTF8();
+    wxCharBuffer region = r.ToUTF8();
     fenrir_user_data->patch_region = get_image_region(region.data());
 }
 
@@ -91,10 +90,13 @@ void FenrirServer::StopServer()
     PostEvent(FENRIR_SERVER_EVENT_TYPE_PENDING);
 
     server_stopped = 1;
-    server_th.join();
+    if (server_th.joinable())
+        server_th.join();
 
-    free(fenrir_user_data->http_buffer);
-    free(fenrir_user_data);
+    if (fenrir_user_data->http_buffer)
+        free(fenrir_user_data->http_buffer);
+    if (fenrir_user_data)
+        free(fenrir_user_data);
 
     PostEvent(FENRIR_SERVER_EVENT_TYPE_STOPPED);
 }
