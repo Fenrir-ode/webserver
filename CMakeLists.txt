@@ -82,10 +82,7 @@ add_dependencies(FenrirServer libchdr ghc_fs)
 target_compile_definitions(FenrirServer PUBLIC LOG_USE_COLOR)
 target_link_libraries(FenrirServer ${FenrirServerLibs})
 
-if(WIN32)
-  set(wxWidgets_USE_STATIC "On")
-endif()
-
+set(wxWidgets_USE_UNICODE On)
 
 find_package(wxWidgets COMPONENTS net gl core base)
 if(wxWidgets_FOUND)
