@@ -135,6 +135,8 @@ Simple::Simple(const wxString &title)
 
   // Apply config
   LoadConfig(appConfig);
+  dirPickerCtrl->SetDirName(appConfig.path);
+  regionComboBox->SetStringSelection(appConfig.region);
 }
 
 void Simple::OnRun(wxCommandEvent &event)
@@ -148,6 +150,8 @@ void Simple::OnComboBox(wxCommandEvent &event)
   // wxPostEvent()
   //  int r = event.GetSelection();
   fenrirServer->SetRegionPatch(regionComboBox->GetStringSelection());
+  
+  appConfig.region = regionComboBox->GetStringSelection();
 
   SaveConfig(appConfig);
 }
@@ -168,6 +172,7 @@ void Simple::OnPathChanged(wxFileDirPickerEvent &evt)
 
   SetIsoDirectory(evt.GetPath());
   
+  appConfig.path = evt.GetPath();
   SaveConfig(appConfig);
 }
 
