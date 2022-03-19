@@ -109,6 +109,10 @@ endif()
 install(TARGETS FenrirServer DESTINATION bin)
 
 # tests
-enable_testing()
-add_subdirectory (tests/menu)
+option(ENABLE_TEST "enable test" Off)
+
+if (ENABLE_TEST)
+  enable_testing()
+  add_subdirectory (tests/menu)
+endif()
 
