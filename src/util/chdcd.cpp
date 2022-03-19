@@ -23,6 +23,12 @@
 #define __bswap_16 _byteswap_ushort 
 #define __bswap_32 _byteswap_ulong  
 #endif
+#ifndef __bswap_16
+#define __bswap_16 __builtin_bswap16 
+#endif
+#ifndef __bswap_32
+#define __bswap_32 __builtin_bswap32
+#endif
 
 static void strdelchr(std::string &str, char chr)
 {
