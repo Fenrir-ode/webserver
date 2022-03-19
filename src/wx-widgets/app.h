@@ -7,10 +7,17 @@
 #include <wx/listctrl.h>
 #include "server-intf.h"
 
+typedef struct
+{
+    wxString path;
+    wxString region;
+} AppConfig;
+
 class Simple : public wxFrame
 {
+    AppConfig appConfig;
     wxTextCtrl *isoDirectoryText_ctrl;
-    wxListView  *gameList_ctrl;
+    wxListView *gameList_ctrl;
     wxComboBox *regionComboBox;
 
     wxButton *run_btn;

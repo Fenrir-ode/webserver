@@ -4,6 +4,62 @@
 #include <wx/filepicker.h>
 #include <wx/filename.h>
 #include "server-intf.h"
+#include "cJSON.h"
+
+static void LoadConfig(AppConfig &appconfig)
+{
+  // default settings
+  appconfig.path = wxString("");
+  appconfig.region = wxString("Disabled");
+
+  // load
+  FILE *fd = fopen("server.cfg", "rb");
+  if (fd)
+  {
+    fseek(fd, 0, SEEK_END);
+    size_t size = ftell(fd);
+    fseek(fd, 0, SEEK_SET);
+
+    char *str = (char *)malloc(size);
+    fread(str, size, 1, fd);
+
+    cJSON *json = cJSON_Parse(str);
+    cJSON *path = cJSON_GetObjectItem(json, "path");
+    cJSON *region = cJSON_GetObjectItem(json, "region");
+
+    if (cJSON_IsString(path))
+    {
+      appconfig.path = wxString::FromAscii(path->valuestring);
+    }
+
+    if (cJSON_IsString(region))
+    {
+      appconfig.region = wxString::FromAscii(region->valuestring);
+    }
+
+    cJSON_Delete(json);
+    free(str);
+    fclose(fd);
+  }
+}
+
+static void SaveConfig(AppConfig &appconfig)
+{
+  cJSON *root = cJSON_CreateObject();
+  cJSON_AddItemToObject(root, "path", cJSON_CreateString(appconfig.path));
+  cJSON_AddItemToObject(root, "region", cJSON_CreateString(appconfig.region));
+  const char *json = cJSON_Print(root);
+
+  FILE *fd = fopen("server.cfg", "wb");
+  if (fd)
+  {
+    fwrite(json, strlen(json), 1, fd);
+    fclose(fd);
+  }
+
+  free((void *)json);
+  cJSON_Delete(root);
+}
 
 Simple::Simple(const wxString &title)
     : wxFrame(NULL, wxID_ANY, title, wxDefaultPosition, wxSize(250, 150))
@@ -43,8 +99,8 @@ Simple::Simple(const wxString &title)
 
   regionComboBox->Select(0);
 
-  gameList_ctrl = new wxListView (panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_REPORT|wxLC_SINGLE_SEL);
-  gameList_ctrl->InsertColumn(0, wxString::Format("Path") , wxLIST_FORMAT_LEFT, 300);
+  gameList_ctrl = new wxListView(panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_SINGLE_SEL);
+  gameList_ctrl->InsertColumn(0, wxString::Format("Path"), wxLIST_FORMAT_LEFT, 300);
 
   // Set up the sizer for the panel
   wxBoxSizer *panelSizer = new wxBoxSizer(wxVERTICAL);
@@ -76,6 +132,9 @@ Simple::Simple(const wxString &title)
   topSizer->Add(panel, 1, wxEXPAND);
   SetSizerAndFit(topSizer);
   Centre();
+
+  // Apply config
+  LoadConfig(appConfig);
 }
 
 void Simple::OnRun(wxCommandEvent &event)
@@ -87,8 +146,10 @@ void Simple::OnComboBox(wxCommandEvent &event)
 {
 
   // wxPostEvent()
-//  int r = event.GetSelection();
+  //  int r = event.GetSelection();
   fenrirServer->SetRegionPatch(regionComboBox->GetStringSelection());
+
+  SaveConfig(appConfig);
 }
 
 void Simple::OnClose(wxCommandEvent &evt)
@@ -106,6 +167,8 @@ void Simple::OnPathChanged(wxFileDirPickerEvent &evt)
   }
 
   SetIsoDirectory(evt.GetPath());
+  
+  SaveConfig(appConfig);
 }
 
 void Simple::SetIsoDirectory(wxString dir)

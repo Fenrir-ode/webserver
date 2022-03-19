@@ -23,15 +23,27 @@ ExternalProject_Add(ghc_fs
   INSTALL_COMMAND   cmake -E echo "Skipping install step."
 )
 
-include_directories(mongoose 
-"${CMAKE_BINARY_DIR}/libchdr/src/libchdr/include"
-"${CMAKE_BINARY_DIR}/ghc_fs/src/ghc_fs/include"
+# Add gulrak/filesystem
+ExternalProject_Add(cJSON
+  GIT_REPOSITORY    https://github.com/DaveGamble/cJSON
+  GIT_TAG           master
+  PREFIX            "${CMAKE_BINARY_DIR}/cJSON"
+  CMAKE_ARGS        "-DENABLE_CJSON_TEST=Off"
+  INSTALL_COMMAND   cmake -E echo "Skipping install step."
+)
+
+include_directories(
+  mongoose 
+  "${CMAKE_BINARY_DIR}/libchdr/src/libchdr/include"
+  "${CMAKE_BINARY_DIR}/ghc_fs/src/ghc_fs/include"
+  "${CMAKE_BINARY_DIR}/cJSON/src/cjson"
  )
 
 link_directories(
   ${CMAKE_BINARY_DIR}/libchdr/src/libchdr-build
   ${CMAKE_BINARY_DIR}/libchdr/src/libchdr-build/deps/zlib-1.2.11
   ${CMAKE_BINARY_DIR}/libchdr/src/libchdr-build/deps/lzma-19.00
+  ${CMAKE_BINARY_DIR}/cJSON/src/cjson-build
 )
 
 set(FenrirServerSrc 
@@ -70,6 +82,11 @@ add_dependencies(FenrirServer libchdr ghc_fs)
 target_compile_definitions(FenrirServer PUBLIC LOG_USE_COLOR)
 target_link_libraries(FenrirServer ${FenrirServerLibs})
 
+if(WIN32)
+  set(wxWidgets_USE_STATIC "On")
+endif()
+
+
 find_package(wxWidgets COMPONENTS net gl core base)
 if(wxWidgets_FOUND)
   include(${wxWidgets_USE_FILE}) 
@@ -84,9 +101,9 @@ endif()
     src/wx-widgets/app.cpp
     src/wx-widgets/server-intf.cpp
     ${FenrirServerSrc} ${FenrirServerHdr})
-  add_dependencies(FenrirServerGui libchdr ghc_fs)
+  add_dependencies(FenrirServerGui libchdr ghc_fs cJSON)
   target_compile_definitions(FenrirServerGui PUBLIC LOG_USE_COLOR)
-  target_link_libraries(FenrirServerGui ${FenrirServerLibs} ${wxWidgets_LIBRARIES})
+  target_link_libraries(FenrirServerGui ${FenrirServerLibs} ${wxWidgets_LIBRARIES} cjson)
 endif()
 
 install(TARGETS FenrirServer DESTINATION bin)

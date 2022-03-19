@@ -4,7 +4,8 @@
             "name": "Linux",
             "includePath": [
                 "${default}",
-                "${workspaceFolder}/src",                
+                "${workspaceFolder}/src",
+                "${workspaceFolder}/build/cJSON/src/cjson",                        
                 "${workspaceFolder}/tests",
                 "${workspaceFolder}/mongoose",
                 "/usr/include/wx-3.0/",
