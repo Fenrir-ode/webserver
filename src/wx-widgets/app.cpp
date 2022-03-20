@@ -111,7 +111,7 @@ Simple::Simple(const wxString &title)
   panelSizer->AddSpacer(15);
   panelSizer->Add(regionPatchLabel, 0, wxEXPAND | wxLEFT, 5);
   panelSizer->Add(regionComboBox, 0, wxEXPAND | wxALL, 5);
-  panelSizer->Add(gameList_ctrl, 0, wxEXPAND | wxALL, 5);
+  panelSizer->Add(gameList_ctrl, 1, wxEXPAND | wxALL, 5);
 
   // Set up the sizer for the frame and resize the frame
   // according to its contents
