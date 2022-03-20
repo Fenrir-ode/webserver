@@ -28,7 +28,7 @@ ExternalProject_Add(cJSON
   GIT_REPOSITORY    https://github.com/DaveGamble/cJSON
   GIT_TAG           master
   PREFIX            "${CMAKE_BINARY_DIR}/cJSON"
-  CMAKE_ARGS        "-DENABLE_CJSON_TEST=Off"
+  CMAKE_ARGS        "-DENABLE_CJSON_TEST=Off" "-DBUILD_SHARED_AND_STATIC_LIBS=Off" "-DENABLE_SANITIZERS=Off" "-DENABLE_CUSTOM_COMPILER_FLAGS=Off" "-DBUILD_SHARED_LIBS=Off"
   INSTALL_COMMAND   cmake -E echo "Skipping install step."
 )
 
@@ -83,15 +83,24 @@ target_compile_definitions(FenrirServer PUBLIC LOG_USE_COLOR)
 target_link_libraries(FenrirServer ${FenrirServerLibs})
 
 set(wxWidgets_USE_UNICODE On)
+set(wxWidgets_USE_UNIVERSAL On)
 
-find_package(wxWidgets COMPONENTS net gl core base)
+find_package(wxWidgets COMPONENTS base core gl net)
 if(wxWidgets_FOUND)
   include(${wxWidgets_USE_FILE}) 
   set(GUI_FLAGS "")
 
-if(WIN32)
-  set(GUI_FLAGS "WIN32")
-endif()
+  if(WIN32)
+    set(GUI_FLAGS "WIN32")
+  endif()
+
+  set(FenrirServerSrc ${FenrirServerSrc} src/windows/fenrir-wx.rc)
+  
+  set(FenrirServerLibs ${FenrirServerLibs} cjson)
+
+  if(WIN32)
+    set(FenrirServerLibs ${FenrirServerLibs})
+  endif()
 
   add_executable(FenrirServerGui ${GUI_FLAGS}
     src/wx-main.cpp 
@@ -100,7 +109,7 @@ endif()
     ${FenrirServerSrc} ${FenrirServerHdr})
   add_dependencies(FenrirServerGui libchdr ghc_fs cJSON)
   target_compile_definitions(FenrirServerGui PUBLIC LOG_USE_COLOR)
-  target_link_libraries(FenrirServerGui ${FenrirServerLibs} ${wxWidgets_LIBRARIES} cjson)
+  target_link_libraries(FenrirServerGui  ${FenrirServerLibs} ${wxWidgets_LIBRARIES} )
 endif()
 
 install(TARGETS FenrirServer DESTINATION bin)

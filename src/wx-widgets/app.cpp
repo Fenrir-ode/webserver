@@ -76,8 +76,8 @@ Simple::Simple(const wxString &title)
                                                        wxEmptyString, wxDirSelectorPromptStr,
                                                        wxDefaultPosition, wxSize(350, wxDefaultCoord));
 
-  wxStaticText *selectPathLabel = new wxStaticText(panel, wxID_ANY, "Selected Path:");
-  wxStaticText *regionPatchLabel = new wxStaticText(panel, wxID_ANY, "Region patch:");
+  wxStaticText *selectPathLabel = new wxStaticText(panel, wxID_ANY, "Saturn image path:");
+  wxStaticText *regionPatchLabel = new wxStaticText(panel, wxID_ANY, "Console region patch:");
   isoDirectoryText_ctrl = new wxTextCtrl(panel, wxID_ANY);
 
   regionComboBox = new wxComboBox(panel, COMBO_REGION_ID, wxEmptyString, {10, 10});
@@ -135,8 +135,11 @@ Simple::Simple(const wxString &title)
 
   // Apply config
   LoadConfig(appConfig);
-  dirPickerCtrl->SetDirName(appConfig.path);
+  dirPickerCtrl->SetPath(appConfig.path);
   regionComboBox->SetStringSelection(appConfig.region);
+
+  fenrirServer->SetRegionPatch(appConfig.region);
+  fenrirServer->SetIsoDirectory(appConfig.path);
 }
 
 void Simple::OnRun(wxCommandEvent &event)
