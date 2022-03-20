@@ -53,6 +53,7 @@
         "list": "cpp",
         "hash_map": "c",
         "bitset": "c",
-        "regex": "c"
+        "regex": "c",
+        "thread": "cpp"
     }
 }

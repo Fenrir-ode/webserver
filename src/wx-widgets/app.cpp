@@ -153,7 +153,7 @@ void Simple::OnComboBox(wxCommandEvent &event)
   // wxPostEvent()
   //  int r = event.GetSelection();
   fenrirServer->SetRegionPatch(regionComboBox->GetStringSelection());
-  
+
   appConfig.region = regionComboBox->GetStringSelection();
 
   SaveConfig(appConfig);
@@ -161,15 +161,25 @@ void Simple::OnComboBox(wxCommandEvent &event)
 
 void Simple::OnClose(wxCommandEvent &evt)
 {
+  Close(true);
+}
+
+void Simple::OnClose(wxCloseEvent &evt)
+{
+  Exit();
+  Destroy();
+}
+
+void Simple::Exit()
+{
   fenrirServer->StopServer();
   // fenrirServer->Kill();
-  Close(true);
 }
 
 void Simple::OnPathChanged(wxFileDirPickerEvent &evt)
 {
   SetIsoDirectory(evt.GetPath());
-  
+
   appConfig.path = evt.GetPath();
   SaveConfig(appConfig);
 }
@@ -220,4 +230,5 @@ EVT_COMBOBOX(COMBO_REGION_ID, Simple::OnComboBox)
 EVT_BUTTON(BUTTON_Close, Simple::OnClose)
 EVT_BUTTON(BUTTON_Run, Simple::OnRun)
 EVT_COMMAND(wxID_ANY, FENRIR_SERVER_EVENT, Simple::OnServerEvent)
+EVT_CLOSE(Simple::OnClose)
 END_EVENT_TABLE()

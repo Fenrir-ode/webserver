@@ -28,8 +28,10 @@ public:
     void OnPathChanged(wxFileDirPickerEvent &evt);
     void OnComboBox(wxCommandEvent &evt);
     void OnClose(wxCommandEvent &evt);
+    void OnClose(wxCloseEvent &evt);
     void OnRun(wxCommandEvent &evt);
     void OnServerEvent(wxCommandEvent &evt);
+    void Exit();
 
     DECLARE_EVENT_TABLE()
 

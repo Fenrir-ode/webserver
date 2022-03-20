@@ -3,10 +3,11 @@
 
 class MyApp : public wxApp
 {
+  Simple *simple;
 public:
   virtual bool OnInit()
   {
-    Simple *simple = new Simple(_("Fenrir Server"));
+    simple = new Simple(_("Fenrir Server"));
     simple->Show(true);
 
     return true;

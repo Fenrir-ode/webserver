@@ -93,10 +93,12 @@ void FenrirServer::StopServer()
     if (server_th.joinable())
         server_th.join();
 
-    if (fenrir_user_data->http_buffer)
+    if (fenrir_user_data && fenrir_user_data->http_buffer)
         free(fenrir_user_data->http_buffer);
     if (fenrir_user_data)
         free(fenrir_user_data);
+
+    fenrir_user_data = NULL;
 
     PostEvent(FENRIR_SERVER_EVENT_TYPE_STOPPED);
 }
