@@ -6,6 +6,8 @@
 #include "server-intf.h"
 #include "cJSON.h"
 
+#pragma GCC diagnostic ignored "-Wdeprecated-enum-enum-conversion"
+
 static void LoadConfig(AppConfig &appconfig)
 {
   // default settings

@@ -85,6 +85,10 @@ target_link_libraries(FenrirServer ${FenrirServerLibs})
 set(wxWidgets_USE_UNICODE On)
 set(wxWidgets_USE_UNIVERSAL On)
 
+if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+  set(wxWidgets_USE_STATIC On)
+endif()
+
 find_package(wxWidgets COMPONENTS base core gl net)
 if(wxWidgets_FOUND)
   include(${wxWidgets_USE_FILE}) 
@@ -107,9 +111,16 @@ if(wxWidgets_FOUND)
     src/wx-widgets/app.cpp
     src/wx-widgets/server-intf.cpp
     ${FenrirServerSrc} ${FenrirServerHdr})
-  add_dependencies(FenrirServerGui libchdr ghc_fs cJSON)
-  target_compile_definitions(FenrirServerGui PUBLIC LOG_USE_COLOR)
-  target_link_libraries(FenrirServerGui  ${FenrirServerLibs} ${wxWidgets_LIBRARIES} )
+    add_dependencies(FenrirServerGui libchdr ghc_fs cJSON)
+    target_compile_definitions(FenrirServerGui PUBLIC LOG_USE_COLOR)
+    target_link_libraries(FenrirServerGui  ${FenrirServerLibs} ${wxWidgets_LIBRARIES} )
+  
+  # target_compile_options(FenrirServerGui PRIVATE -Wall -Wextra -Wpedantic -Werror)
+  
+  if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+    set_property(TARGET FenrirServerGui PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+  endif()
+
 endif()
 
 install(TARGETS FenrirServer DESTINATION bin)

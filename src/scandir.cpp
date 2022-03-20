@@ -7,7 +7,9 @@
 
 #if defined(WIN32) || defined(_WIN32)
 #include <Windows.h>
+#ifndef PATH_MAX
 #define PATH_MAX MAX_PATH
+#endif
 #endif
 
 namespace fs = ghc::filesystem;
@@ -20,58 +22,12 @@ namespace fs = ghc::filesystem;
 #define PATH_SEPARATOR "/"
 #endif
 
-#if defined(WIN32) || defined(_WIN32)
-#include <windows.h>
-
-#define LAA(se)                                                      \
-    {                                                                \
-        {se}, SE_PRIVILEGE_ENABLED | SE_PRIVILEGE_ENABLED_BY_DEFAULT \
-    }
-
-#define BEGIN_PRIVILEGES(tp, n)            \
-    static const struct                    \
-    {                                      \
-        ULONG PrivilegeCount;              \
-        LUID_AND_ATTRIBUTES Privileges[n]; \
-    } tp = {n, {
-#define END_PRIVILEGES \
-    }                  \
-    }                  \
-    ;
-
-// in case you not include wdm.h, where this defined
-#define SE_BACKUP_PRIVILEGE (17L)
-
-ULONG AdjustPrivileges()
-{
-    if (ImpersonateSelf(SecurityImpersonation))
-    {
-        HANDLE hToken;
-        if (OpenThreadToken(GetCurrentThread(), TOKEN_ADJUST_PRIVILEGES, TRUE, &hToken))
-        {
-            BEGIN_PRIVILEGES(tp, 1)
-            LAA(SE_BACKUP_PRIVILEGE),
-                END_PRIVILEGES
-                    AdjustTokenPrivileges(hToken, FALSE, (PTOKEN_PRIVILEGES)&tp, 0, 0, 0);
-            CloseHandle(hToken);
-        }
-    }
-
-    return GetLastError();
-}
-#endif
-
 int tree_scandir(char *dirname, scandir_cbk_t cbk, uintptr_t ud)
 {
     std::error_code ec;
     int count = 1;
     char name[PATH_MAX];
     char path[PATH_MAX];
-
-#if defined(WIN32) || defined(_WIN32)
-    AdjustPrivileges();
-    std::cout << "WINDOWWS" << std::endl;
-#endif
 
     try
     {

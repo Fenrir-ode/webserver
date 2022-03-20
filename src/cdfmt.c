@@ -356,7 +356,6 @@ uint32_t cdfmt_read_data(fenrir_user_data_t *fenrir_user_data, uint8_t *data, ui
     }
     else if (fenrir_user_data->type == IMAGE_TYPE_CHD)
     {
-        static int i = 0;
         uint32_t hunknumber = (fad) / fenrir_user_data->sectors_per_hunk;
         uint32_t hunkoffset = (fad) % fenrir_user_data->sectors_per_hunk;
 
@@ -385,7 +384,7 @@ uint32_t cdfmt_close(fenrir_user_data_t *fenrir_user_data)
 {
     if (fenrir_user_data->type == IMAGE_TYPE_MAME_LDR)
     {
-        for (int i = 0; i < fenrir_user_data->toc.numtrks; i++)
+        for (uint32_t i = 0; i < fenrir_user_data->toc.numtrks; i++)
         {
             fclose(fenrir_user_data->toc.tracks[i].fp);
         }

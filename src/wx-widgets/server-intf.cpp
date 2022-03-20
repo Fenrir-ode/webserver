@@ -26,12 +26,12 @@ static int _run(uintptr_t ud)
     return server_stopped;
 }
 
-extern "C" server_events_t _server_events = {
+server_events_t _server_events = {
     .ud = 0,
     .run = _run,
     .notify_add_game = NULL};
 
-extern "C" server_events_t *server_events = &_server_events;
+server_events_t *server_events = &_server_events;
 
 void FenrirServer::Init()
 {
@@ -46,7 +46,7 @@ void FenrirServer::Init()
     fenrir_user_data->http_buffer = (uint8_t *)malloc(4 * 2048);
     fenrir_user_data->patch_region = -1;
 
-    auto notifier = [](uintptr_t ud, char *gamename)
+    auto notifier = [](uintptr_t ud, const char *gamename)
     {
         FenrirServer *self = (FenrirServer *)(ud);
         server_mtx.lock();
