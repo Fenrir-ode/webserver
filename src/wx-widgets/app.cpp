@@ -78,7 +78,6 @@ Simple::Simple(const wxString &title)
 
   wxStaticText *selectPathLabel = new wxStaticText(panel, wxID_ANY, "Saturn image path:");
   wxStaticText *regionPatchLabel = new wxStaticText(panel, wxID_ANY, "Console region patch:");
-  isoDirectoryText_ctrl = new wxTextCtrl(panel, wxID_ANY);
 
   regionComboBox = new wxComboBox(panel, COMBO_REGION_ID, wxEmptyString, {10, 10});
 
@@ -104,10 +103,9 @@ Simple::Simple(const wxString &title)
 
   // Set up the sizer for the panel
   wxBoxSizer *panelSizer = new wxBoxSizer(wxVERTICAL);
-  panelSizer->Add(dirPickerCtrl, 0, wxEXPAND | wxALL, 5);
   panelSizer->AddSpacer(15);
   panelSizer->Add(selectPathLabel, 0, wxEXPAND | wxLEFT, 5);
-  panelSizer->Add(isoDirectoryText_ctrl, 0, wxEXPAND | wxALL, 5);
+  panelSizer->Add(dirPickerCtrl, 0, wxEXPAND | wxALL, 5);
   panelSizer->AddSpacer(15);
   panelSizer->Add(regionPatchLabel, 0, wxEXPAND | wxLEFT, 5);
   panelSizer->Add(regionComboBox, 0, wxEXPAND | wxALL, 5);
@@ -168,11 +166,6 @@ void Simple::OnClose(wxCommandEvent &evt)
 
 void Simple::OnPathChanged(wxFileDirPickerEvent &evt)
 {
-  if (isoDirectoryText_ctrl)
-  {
-    isoDirectoryText_ctrl->SetValue(evt.GetPath());
-  }
-
   SetIsoDirectory(evt.GetPath());
   
   appConfig.path = evt.GetPath();

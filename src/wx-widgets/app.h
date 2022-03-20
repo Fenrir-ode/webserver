@@ -16,7 +16,6 @@ typedef struct
 class Simple : public wxFrame
 {
     AppConfig appConfig;
-    wxTextCtrl *isoDirectoryText_ctrl;
     wxListView *gameList_ctrl;
     wxComboBox *regionComboBox;
 
