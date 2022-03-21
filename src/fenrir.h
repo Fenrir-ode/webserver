@@ -83,7 +83,7 @@ extern "C"
         // streams
         uint32_t req_fad;
         uint32_t req_size;
-        uint8_t *http_buffer;
+        uint8_t http_buffer[4 * 2048];
         // dir
         uint32_t entries_offset;
         int patch_region;

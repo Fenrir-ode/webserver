@@ -9,24 +9,6 @@
 #include "menu.http.h"
 #include "data.http.h"
 #include "patch.h"
-#define XXH_STATIC_LINKING_ONLY   /* access advanced declarations */
-#define XXH_IMPLEMENTATION   /* access definitions */
-#include "xxHash/xxhash.h"
-
-static void start_thread(void (*f)(void *), void *p) {
-#ifdef _WIN32
-  _beginthread((void(__cdecl *)(void *)) f, 0, p);
-#else
-#define closesocket(x) close(x)
-#include <pthread.h>
-  pthread_t thread_id = (pthread_t) 0;
-  pthread_attr_t attr;
-  (void) pthread_attr_init(&attr);
-  (void) pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-  pthread_create(&thread_id, &attr, (void *(*) (void *) ) f, p);
-  pthread_attr_destroy(&attr);
-#endif
-}
 
 extern server_events_t *server_events;
 
@@ -40,7 +22,6 @@ static void sig_handler(int unused)
   (void)unused;
   sig_end = 0;
 }
-
 
 #if 0
 void __() {
@@ -64,10 +45,28 @@ void __() {
   free(http_buffer);
   free(fenrir_user_data);
 }
-#endif 
+#endif
+
+// Pipe event handler
+static void pcb(struct mg_connection *c, int ev, void *ev_data, void *fn_data)
+{
+  if (ev == MG_EV_READ)
+  {
+    struct mg_connection *t;
+    for (t = c->mgr->conns; t != NULL; t = t->next)
+    {
+      if (t->label[0] != 'W')
+        continue; // Ignore un-marked connections
+      mg_http_reply(t, 200, "Host: foo.com\r\n", "%.*s\n", c->recv.len,
+                    c->recv.buf); // Respond!
+      t->label[0] = 0;            // Clear mark
+    }
+  }
+}
 
 int server(server_config_t *server_config)
 {
+  struct mg_connection *pipe;
   struct mg_mgr mgr;
   struct mg_timer t1;
 
@@ -78,20 +77,21 @@ int server(server_config_t *server_config)
   // start http server
   log_info("start http server");
   mg_mgr_init(&mgr);
-  httpd_init(&mgr);
+  httpd_init(&mgr, sizeof(fenrir_user_data_t));
 
   menu_register_routes(&mgr);
   data_register_routes(&mgr);
 
-  fenrir_user_data_t *fenrir_user_data = NULL; // tmp
-
-  mg_http_listen(&mgr, "http://0.0.0.0:3000", httpd_poll, (void *)fenrir_user_data);
+ // pipe = mg_mkpipe(&mgr, httpd_poll, server_config);
+  mg_http_listen(&mgr, "http://0.0.0.0:3000", httpd_poll, NULL);
 
   while (sig_end)
   {
     mg_mgr_poll(&mgr, 50);
-    if (server_events->run) {
-      if (server_events->run(server_events->ud) != 0) {
+    if (server_events->run)
+    {
+      if (server_events->run(server_events->ud) != 0)
+      {
         break;
       }
     }

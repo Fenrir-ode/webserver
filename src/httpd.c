@@ -5,13 +5,38 @@
 static httpd_route_t *httpd_route[MAX_HTTPD_ROUTE];
 static uint32_t (*poll_handler)(struct mg_connection *c, int ev, void *ev_data, void *fn_data);
 
-uint32_t httpd_init(struct mg_mgr *mgr)
+typedef struct
+{
+    uint8_t *data;
+    int connected;
+} user_data_cache_t;
+
+static user_data_cache_t user_data_cache[MAX_FUD];
+
+uint32_t httpd_init(struct mg_mgr *mgr, size_t per_connect_user_size)
 {
     for (int i = 0; i < MAX_HTTPD_ROUTE; i++)
     {
         httpd_route[i] = NULL;
     }
+
+    for (int i = 0; i < MAX_FUD; i++)
+    {
+        user_data_cache[i].data = (uint8_t *)malloc(per_connect_user_size);
+        user_data_cache[i].connected = 0;
+    }
     poll_handler = NULL;
+}
+
+void httpd_free()
+{
+    for (int i = 0; i < MAX_FUD; i++)
+    {
+        if (user_data_cache[i].data)
+            free(user_data_cache[i].data);
+        user_data_cache[i].data = NULL;
+        user_data_cache[i].connected = 0;
+    }
 }
 
 uint32_t httpd_add_route(struct mg_mgr *mgr, const httpd_route_t *route)
@@ -35,15 +60,40 @@ uint32_t httpd_add_route(struct mg_mgr *mgr, const httpd_route_t *route)
 
 void httpd_poll(struct mg_connection *c, int ev, void *ev_data, void *fn_data)
 {
-    if (ev == MG_EV_CLOSE)
+    if (ev == MG_EV_ACCEPT)
+    {
+        c->fn_data = NULL;
+        // Find a cache
+        for (int i = 0; i < MAX_FUD; i++)
+        {
+            if (user_data_cache[i].connected == 0)
+            {
+                c->fn_data = &user_data_cache[i];
+                user_data_cache[i].connected = 1;
+                break;
+            }
+        }
+        if (c->fn_data == NULL)
+        {
+            log_error("no more cache available");
+        }
+    }
+    else if (ev == MG_EV_CLOSE)
     {
         poll_handler = NULL;
+        if (c->fn_data)
+        {
+            user_data_cache_t *user_data_cache = (user_data_cache_t *)c->fn_data;
+            user_data_cache->connected = 0;
+        }
     }
     else if ((ev == MG_EV_POLL || ev == MG_EV_WRITE) && c->is_writable)
     {
+
         if (poll_handler != NULL)
         {
-            uint32_t err = poll_handler(c, ev, ev_data, fn_data);
+            user_data_cache_t *user_data_cache = (user_data_cache_t *)c->fn_data;
+            uint32_t err = poll_handler(c, ev, ev_data, user_data_cache->data);
             // Error or complete
             if (err != 0)
             {
@@ -65,7 +115,8 @@ void httpd_poll(struct mg_connection *c, int ev, void *ev_data, void *fn_data)
             {
                 log_trace(hm->message.ptr);
                 // log_info("%s", hm->uri.ptr);
-                uint32_t err = httpd_route[i]->http_handler(c, ev, ev_data, fn_data);
+                user_data_cache_t *user_data_cache = (user_data_cache_t *)c->fn_data;
+                uint32_t err = httpd_route[i]->http_handler(c, ev, ev_data, user_data_cache->data);
                 if (err == 0)
                 {
                     // no error, use poll handler
@@ -79,25 +130,26 @@ void httpd_poll(struct mg_connection *c, int ev, void *ev_data, void *fn_data)
                 return;
             }
         }
+#if 0
         log_debug("fallback to static: %s", hm->uri);
         // fallback
         struct mg_http_serve_opts opts = {.root_dir = "isos"};
         mg_http_serve_dir(c, ev_data, &opts);
         poll_handler = NULL;
+#endif
     }
 }
 
-
 int http_get_range_header(struct mg_http_message *hm, uint32_t *range_start, uint32_t *range_end)
 {
-  struct mg_str *range = mg_http_get_header(hm, "range");
-  if (range && range->ptr)
-  {
-    if (sscanf((char *)range->ptr, "bytes=%d-%d", range_start, range_end) != EOF)
+    struct mg_str *range = mg_http_get_header(hm, "range");
+    if (range && range->ptr)
     {
-      return 0;
+        if (sscanf((char *)range->ptr, "bytes=%d-%d", range_start, range_end) != EOF)
+        {
+            return 0;
+        }
     }
-  }
 
-  return -1;
+    return -1;
 }

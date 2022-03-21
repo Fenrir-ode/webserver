@@ -4,6 +4,7 @@
 #include <mutex>
 #include <functional>
 #include "server-intf.h"
+
 #include "../server.h"
 #include "../log.h"
 
@@ -12,13 +13,13 @@ wxDEFINE_EVENT(FENRIR_SERVER_EVENT, wxCommandEvent);
 static std::mutex server_mtx;
 static std::thread server_th;
 
-static fenrir_user_data_t *fenrir_user_data = NULL;
+server_config_t server_config;
 
 static int server_stopped = 0;
 
 static void server_thread_func(int id)
 {
-    server(fenrir_user_data);
+    server(&server_config);
 }
 
 static int _run(uintptr_t ud)
@@ -35,16 +36,7 @@ server_events_t *server_events = &_server_events;
 
 void FenrirServer::Init()
 {
-    fenrir_user_data = (fenrir_user_data_t *)calloc(sizeof(fenrir_user_data_t), 1);
-    if (fenrir_user_data == NULL)
-    {
-        wxLogError(_T("Failled to allocate fernrir user buffer"));
-        exit(-1);
-    }
-
     server_stopped = 0;
-    fenrir_user_data->http_buffer = (uint8_t *)malloc(4 * 2048);
-    fenrir_user_data->patch_region = -1;
 
     auto notifier = [](uintptr_t ud, const char *gamename)
     {
@@ -77,12 +69,12 @@ bool FenrirServer::Joinable()
 void FenrirServer::SetRegionPatch(wxString r)
 {
     wxCharBuffer region = r.ToUTF8();
-    fenrir_user_data->patch_region = get_image_region(region.data());
+    //fenrir_user_data->patch_region = get_image_region(region.data());
 }
 
 void FenrirServer::SetIsoDirectory(wxString directory)
 {
-    strcpy(fenrir_user_data->image_path, directory.mbc_str());
+    strcpy(server_config.image_path, directory.mbc_str());
 }
 
 void FenrirServer::StopServer()
@@ -92,13 +84,6 @@ void FenrirServer::StopServer()
     server_stopped = 1;
     if (server_th.joinable())
         server_th.join();
-
-    if (fenrir_user_data && fenrir_user_data->http_buffer)
-        free(fenrir_user_data->http_buffer);
-    if (fenrir_user_data)
-        free(fenrir_user_data);
-
-    fenrir_user_data = NULL;
 
     PostEvent(FENRIR_SERVER_EVENT_TYPE_STOPPED);
 }

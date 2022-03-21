@@ -4,10 +4,10 @@
 #include "cdfmt.h"
 #include "fenrir.h"
 #include "server.h"
+#include "menu.http.h"
 #include "log.h"
 #include "httpd.h"
 #include "scandir.h"
-#include "server.h"
 
 server_shared_t server_shared;
 

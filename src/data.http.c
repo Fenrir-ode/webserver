@@ -6,7 +6,10 @@
 #include "cdfmt.h"
 #include "fenrir.h"
 #include "httpd.h"
+#include "server.h"
 #include "data.http.h"
+#include "menu.http.h"
+#include "patch.h"
 
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
@@ -149,6 +152,6 @@ static const httpd_route_t httpd_route_data = {
 void data_register_routes(struct mg_mgr *mgr)
 {
 
-  httpd_add_route(&mgr, &httpd_route_toc);
-  httpd_add_route(&mgr, &httpd_route_data);
+  httpd_add_route(mgr, &httpd_route_toc);
+  httpd_add_route(mgr, &httpd_route_data);
 }
