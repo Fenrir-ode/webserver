@@ -1,3 +1,6 @@
 
-// Wrapper arround mame chdcd stuff
 #pragma once
+
+
+   int get_image_region(char *r);
+   

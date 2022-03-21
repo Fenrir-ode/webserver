@@ -32,6 +32,10 @@ ExternalProject_Add(cJSON
   INSTALL_COMMAND   cmake -E echo "Skipping install step."
 )
 
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
+
 include_directories(
   mongoose 
   "${CMAKE_BINARY_DIR}/libchdr/src/libchdr/include"
@@ -53,6 +57,7 @@ set(FenrirServerSrc
   src/util/util.cpp
   src/cdfmt.c 
   src/server.c 
+  src/data.http.c 
   src/menu.http.c 
   src/httpd.c 
   src/log.c
@@ -80,7 +85,7 @@ endif()
 add_executable(FenrirServer src/cli-main.c  ${FenrirServerSrc} ${FenrirServerHdr})
 add_dependencies(FenrirServer libchdr ghc_fs)
 target_compile_definitions(FenrirServer PUBLIC LOG_USE_COLOR)
-target_link_libraries(FenrirServer ${FenrirServerLibs})
+target_link_libraries(FenrirServer ${FenrirServerLibs} Threads::Threads)
 
 set(wxWidgets_USE_UNICODE On)
 set(wxWidgets_USE_UNIVERSAL On)

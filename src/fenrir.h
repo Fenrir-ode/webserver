@@ -64,14 +64,6 @@ extern "C"
 
     typedef struct
     {
-        uint16_t id;
-        uint32_t flag;
-        char *path;
-        char *name;
-    } fs_cache_t;
-
-    typedef struct
-    {
         // entry file name
         char filename[__MAX_PATH_LEN];
         char image_path[__MAX_PATH_LEN];
@@ -93,11 +85,7 @@ extern "C"
         uint32_t req_size;
         uint8_t *http_buffer;
         // dir
-        uint32_t sd_dir_entries_offset;
-        uint32_t sd_dir_entries_count;
-        fs_cache_t fs_cache[MAX_ENTRIES];
-        sd_dir_entry_t sd_dir_entries[MAX_ENTRIES];
-
+        uint32_t entries_offset;
         int patch_region;
 
     } fenrir_user_data_t;
