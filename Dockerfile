@@ -8,3 +8,4 @@ RUN apt-get update && \
 RUN mkdir build && cd build && cmake .. && make && make install && rm /work -rf
 
 
+EXPOSE 3000
