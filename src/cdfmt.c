@@ -272,7 +272,12 @@ static uint32_t chd_parse_toc(const char *tocfname, fenrir_user_data_t *fenrir_u
 
 uint32_t cdfmt_parse_toc(const char *tocfname, fenrir_user_data_t *fenrir_ud, raw_toc_dto_t *fenrir_toc)
 {
-    if (strstr(tocfname, ".chd") != NULL)
+    int len = strlen(tocfname);
+    char * ext = (char*)tocfname +len;
+    int i = 0;
+    while (i < len && (*--ext != '.')) i++;
+
+    if (strcasecmp(ext, ".chd") == 0)
     {
         fenrir_ud->type = IMAGE_TYPE_CHD;
         return chd_parse_toc(tocfname, fenrir_ud, fenrir_toc);

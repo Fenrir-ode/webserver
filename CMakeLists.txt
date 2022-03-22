@@ -14,16 +14,6 @@ ExternalProject_Add(libchdr
 )
 
 # Add gulrak/filesystem
-ExternalProject_Add(ghc_fs
-  GIT_REPOSITORY    https://github.com/gulrak/filesystem
-  GIT_TAG           master
-  PREFIX            "${CMAKE_BINARY_DIR}/ghc_fs"
-  BUILD_COMMAND     cmake -E echo "Skipping build step."
-  CONFIGURE_COMMAND cmake -E echo "Skipping configure step."
-  INSTALL_COMMAND   cmake -E echo "Skipping install step."
-)
-
-# Add gulrak/filesystem
 ExternalProject_Add(cJSON
   GIT_REPOSITORY    https://github.com/DaveGamble/cJSON
   GIT_TAG           master
@@ -39,8 +29,8 @@ find_package(Threads REQUIRED)
 include_directories(
   mongoose 
   "${CMAKE_BINARY_DIR}/libchdr/src/libchdr/include"
-  "${CMAKE_BINARY_DIR}/ghc_fs/src/ghc_fs/include"
-  "${CMAKE_BINARY_DIR}/cJSON/src/cjson"
+  "${CMAKE_BINARY_DIR}/cJSON/src/cJSON"
+  "${CMAKE_SOURCE_DIR}/src/ghc/include"
  )
 
 link_directories(
@@ -72,7 +62,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
   set(FenrirServerSrc ${FenrirServerSrc} src/windows/getopt.c)
   include_directories(src/windows mongoose 
   "${CMAKE_BINARY_DIR}/libchdr/src/libchdr/include" 
-  "${CMAKE_BINARY_DIR}/ghc_fs/src/ghc_fs/include"
+  "${CMAKE_SOURCE_DIR}/src/ghc/include"
   )
 
 endif()
@@ -82,10 +72,14 @@ if(WIN32)
   set(FenrirServerLibs ${FenrirServerLibs} wsock32 ws2_32)
 endif()
 
-add_executable(FenrirServer src/cli-main.c  ${FenrirServerSrc} ${FenrirServerHdr})
-add_dependencies(FenrirServer libchdr ghc_fs)
+add_library(FenrirObjLib OBJECT ${FenrirServerSrc})
+target_compile_definitions(FenrirObjLib PUBLIC LOG_USE_COLOR)
+
+add_executable(FenrirServer src/cli-main.c ${FenrirServerHdr})
+add_dependencies(FenrirServer libchdr)
+
 target_compile_definitions(FenrirServer PUBLIC LOG_USE_COLOR)
-target_link_libraries(FenrirServer ${FenrirServerLibs} Threads::Threads)
+target_link_libraries(FenrirServer FenrirObjLib ${FenrirServerLibs})
 
 set(wxWidgets_USE_UNICODE On)
 set(wxWidgets_USE_UNIVERSAL On)
@@ -115,10 +109,10 @@ if(wxWidgets_FOUND)
     src/wx-main.cpp 
     src/wx-widgets/app.cpp
     src/wx-widgets/server-intf.cpp
-    ${FenrirServerSrc} ${FenrirServerHdr})
-    add_dependencies(FenrirServerGui libchdr ghc_fs cJSON)
+    ${FenrirServerHdr})
+    add_dependencies(FenrirServerGui libchdr cJSON)
     target_compile_definitions(FenrirServerGui PUBLIC LOG_USE_COLOR)
-    target_link_libraries(FenrirServerGui  ${FenrirServerLibs} ${wxWidgets_LIBRARIES} )
+    target_link_libraries(FenrirServerGui FenrirObjLib ${FenrirServerLibs} ${wxWidgets_LIBRARIES} )
   
   # target_compile_options(FenrirServerGui PRIVATE -Wall -Wextra -Wpedantic -Werror)
   
