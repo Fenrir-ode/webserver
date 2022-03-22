@@ -19,6 +19,7 @@ static int server_stopped = 0;
 
 static void server_thread_func(int id)
 {
+    server_config.port = 80;
     server(&server_config);
 }
 

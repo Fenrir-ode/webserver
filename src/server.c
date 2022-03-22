@@ -23,50 +23,16 @@ static void sig_handler(int unused)
   sig_end = 0;
 }
 
-#if 0
-void __() {
-    // setup buffer
-  http_buffer = (uint8_t *)malloc(4 * 2048);
-  if (http_buffer == NULL)
-  {
-    log_error("Failled to allocate http buffer");
-    return -1;
-  }
-  fenrir_user_data_t *fenrir_user_data = (fenrir_user_data_t *)calloc(sizeof(fenrir_user_data_t), 1);
-  if (fenrir_user_data == NULL)
-  {
-    log_error("Failled to allocate fernrir user buffer");
-    return -1;
-  }
-  fenrir_user_data->http_buffer = http_buffer;
-  fenrir_user_data->patch_region = -1;
-
-  
-  free(http_buffer);
-  free(fenrir_user_data);
-}
-#endif
-
-// Pipe event handler
-static void pcb(struct mg_connection *c, int ev, void *ev_data, void *fn_data)
+static uint32_t user_data_close_handler(struct mg_connection *c, int ev, void *ev_data, void *fn_data)
 {
-  if (ev == MG_EV_READ)
-  {
-    struct mg_connection *t;
-    for (t = c->mgr->conns; t != NULL; t = t->next)
-    {
-      if (t->label[0] != 'W')
-        continue; // Ignore un-marked connections
-      mg_http_reply(t, 200, "Host: foo.com\r\n", "%.*s\n", c->recv.len,
-                    c->recv.buf); // Respond!
-      t->label[0] = 0;            // Clear mark
-    }
-  }
+  fenrir_user_data_t *fenrir_user_data = (fenrir_user_data_t *)fn_data;
+  cdfmt_close(fenrir_user_data);
+  memset(fenrir_user_data, 0, sizeof(fenrir_user_data_t));
+  return 0;
 }
 
 int server(server_config_t *server_config)
 {
-  struct mg_connection *pipe;
   struct mg_mgr mgr;
   struct mg_timer t1;
 
@@ -77,13 +43,15 @@ int server(server_config_t *server_config)
   // start http server
   log_info("start http server");
   mg_mgr_init(&mgr);
-  httpd_init(&mgr, sizeof(fenrir_user_data_t));
+  httpd_init(&mgr, sizeof(fenrir_user_data_t), user_data_close_handler);
 
   menu_register_routes(&mgr);
   data_register_routes(&mgr);
 
- // pipe = mg_mkpipe(&mgr, httpd_poll, server_config);
-  mg_http_listen(&mgr, "http://0.0.0.0:3000", httpd_poll, NULL);
+  char url[512];
+  snprintf(url, sizeof(url), "http://0.0.0.0:%d", server_config->port);
+
+  mg_http_listen(&mgr, url, httpd_poll, NULL);
 
   while (sig_end)
   {

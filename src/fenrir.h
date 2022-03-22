@@ -87,6 +87,7 @@ extern "C"
         // dir
         uint32_t entries_offset;
         int patch_region;
+        int with_proxy;
 
     } fenrir_user_data_t;
 

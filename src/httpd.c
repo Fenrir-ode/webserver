@@ -4,6 +4,7 @@
 
 static httpd_route_t *httpd_route[MAX_HTTPD_ROUTE];
 static uint32_t (*poll_handler)(struct mg_connection *c, int ev, void *ev_data, void *fn_data);
+static uint32_t (*close_handler)(struct mg_connection *c, int ev, void *ev_data, void *fn_data);
 
 typedef struct
 {
@@ -13,7 +14,7 @@ typedef struct
 
 static user_data_cache_t user_data_cache[MAX_FUD];
 
-uint32_t httpd_init(struct mg_mgr *mgr, size_t per_connect_user_size)
+uint32_t httpd_init(struct mg_mgr *mgr, size_t per_connect_user_size, uint32_t (*_close_handler)(struct mg_connection *c, int ev, void *ev_data, void *fn_data))
 {
     for (int i = 0; i < MAX_HTTPD_ROUTE; i++)
     {
@@ -26,6 +27,7 @@ uint32_t httpd_init(struct mg_mgr *mgr, size_t per_connect_user_size)
         user_data_cache[i].connected = 0;
     }
     poll_handler = NULL;
+    close_handler = _close_handler;
 }
 
 void httpd_free()
@@ -81,10 +83,17 @@ void httpd_poll(struct mg_connection *c, int ev, void *ev_data, void *fn_data)
     else if (ev == MG_EV_CLOSE)
     {
         poll_handler = NULL;
-        if (c->fn_data)
+
+        user_data_cache_t *user_data_cache = c->fn_data ? (user_data_cache_t *)c->fn_data : NULL;
+
+        if (user_data_cache)
         {
-            user_data_cache_t *user_data_cache = (user_data_cache_t *)c->fn_data;
             user_data_cache->connected = 0;
+        }
+
+        if (close_handler)
+        {
+            close_handler(c, MG_EV_CLOSE, ev_data, user_data_cache ? user_data_cache->data : NULL);
         }
     }
     else if ((ev == MG_EV_POLL || ev == MG_EV_WRITE) && c->is_writable)
@@ -137,6 +146,8 @@ void httpd_poll(struct mg_connection *c, int ev, void *ev_data, void *fn_data)
         mg_http_serve_dir(c, ev_data, &opts);
         poll_handler = NULL;
 #endif
+
+        mg_http_reply(c, 404, "", "Nothing here");
     }
 }
 
@@ -152,4 +163,11 @@ int http_get_range_header(struct mg_http_message *hm, uint32_t *range_start, uin
     }
 
     return -1;
+}
+
+int http_is_request_behind_proxy(struct mg_http_message *hm)
+{
+    // check if X-Upstream header is present
+    struct mg_str *range = mg_http_get_header(hm, "X-Real-IP");
+    return range && range->ptr;
 }

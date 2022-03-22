@@ -14,6 +14,39 @@
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
 
+static int open_toc(struct mg_connection *c, struct mg_http_message *hm, fenrir_user_data_t *fenrir_user_data)
+{
+  char uri[64];
+  int id = -1;
+
+  // Check if a game is selected
+  memcpy(uri, hm->uri.ptr, hm->uri.len);
+  if ((sscanf(uri, "/toc_bin/%d", &id) == 1) || (sscanf(uri, "/data/%d", &id) == 1))
+  {
+    if (menu_get_filename_by_id(fenrir_user_data, id, fenrir_user_data->filename) == -1)
+    {
+      log_error("Nothing found for %d", id);
+    }
+    else
+    {
+      log_trace("Found: %s", fenrir_user_data->filename);
+    }
+  }
+
+  if (cdfmt_parse_toc(fenrir_user_data->filename, fenrir_user_data, fenrir_user_data->toc_dto) == 0)
+  {
+    log_debug("parse toc: %d tracks found", fenrir_user_data->toc.numtrks);
+    size_t sz = sizeof(raw_toc_dto_t) * (3 + fenrir_user_data->toc.numtrks);
+
+    return 0;
+  }
+  else
+  {
+    log_error("parse toc failed");
+    return -1;
+  }
+}
+
 // =============================================================
 // Toc
 // =============================================================
@@ -23,7 +56,7 @@ static uint32_t toc_http_handler(struct mg_connection *c, int ev, void *ev_data,
   struct mg_http_message *hm = (struct mg_http_message *)ev_data;
   char uri[64];
   int id = -1;
-
+#if 0
   // Check if a game is selected
   memcpy(uri, hm->uri.ptr, hm->uri.len);
   if (sscanf(uri, "/toc_bin/%d", &id) == 1)
@@ -61,6 +94,28 @@ static uint32_t toc_http_handler(struct mg_connection *c, int ev, void *ev_data,
     mg_http_reply(c, 500, "", "%s", "Error\n");
     return -1;
   }
+#else
+
+  if (open_toc(c, hm, fenrir_user_data) == 0)
+  {
+    size_t sz = sizeof(raw_toc_dto_t) * (3 + fenrir_user_data->toc.numtrks);
+    mg_printf(c,
+              "HTTP/1.0 200 OK\r\n"
+              "Cache-Control: no-cache\r\n"
+              "Content-Type: application/octet-stream\r\n"
+              "Content-Length: %lu\r\n\r\n",
+              (unsigned long)sz);
+    mg_send(c, fenrir_user_data->toc_dto, sz);
+    return 0;
+  }
+  else
+  {
+    log_error("parse toc failed");
+    mg_http_reply(c, 500, "", "%s", "Error\n");
+    return -1;
+  }
+
+#endif
 }
 
 static const httpd_route_t httpd_route_toc = {
@@ -78,8 +133,21 @@ static uint32_t data_http_handler(struct mg_connection *c, int ev, void *ev_data
   uint32_t range_end = 0;
   if (fenrir_user_data->toc.numtrks == 0)
   {
-    mg_http_reply(c, 404, "", "Toc not valid or no file found");
-    log_error("Toc not valid or no file found");
+    if (open_toc(c, hm, fenrir_user_data) != 0)
+    {
+      mg_http_reply(c, 404, "", "Toc not valid or no file found");
+      log_error("Toc not valid or no file found");
+      return -1;
+    }
+  }
+
+  // if running with a proxy, and current file is "proxifiable"
+  if (http_is_request_behind_proxy(hm) && fenrir_user_data->type == IMAGE_TYPE_MAME_LDR)
+  {
+    char httpRedirectLocation[512];
+    snprintf(httpRedirectLocation, 512, "Location: http://localhost:80%s\r\n", fenrir_user_data->toc.tracks[0].filename);
+    mg_http_reply(c, 301, httpRedirectLocation, "");
+    log_trace("redirect...");
     return -1;
   }
 
@@ -151,7 +219,6 @@ static const httpd_route_t httpd_route_data = {
 
 void data_register_routes(struct mg_mgr *mgr)
 {
-
   httpd_add_route(mgr, &httpd_route_toc);
   httpd_add_route(mgr, &httpd_route_data);
 }

@@ -39,6 +39,8 @@ void usage(char *progname)
          "CD Image directory to serve.\n");
   printf("  -r --region\t\t"
          " (J, T, U, B, K, A, E, L)\tSet console region.\n");
+  printf("  -p --port\t\t"
+         " port (80 by default)\n");
   printf("  --verbose\t"
          "Display more information.\n");
 }
@@ -52,25 +54,31 @@ int main(int argc, char *argv[])
   int option_index = 0;
   int option_valid = 0;
   static int verbose_flag = 0;
+  static int proxy_flag = 0;
 
   // Parse options
-  server_config_t server_config = {};
+  server_config_t server_config = {
+      .port = 80};
 
   static const struct option long_options[] = {
       {"verbose", no_argument, &verbose_flag, 1},
       {"dir", required_argument, NULL, 'd'},
       {"region", required_argument, NULL, 'r'},
+      {"port", required_argument, NULL, 'p'},
       {0, 0, 0, 0}};
 
   while (1)
   {
-    c = getopt_long(argc, argv, "r:d:", long_options, &option_index);
+    c = getopt_long(argc, argv, "r:d:p:", long_options, &option_index);
     if (c == -1)
       break;
 
     switch (c)
     {
     case 0:
+      break;
+    case 'p':
+      server_config.port = atoi(optarg);
       break;
     case 'd':
       option_valid++;
@@ -91,9 +99,11 @@ int main(int argc, char *argv[])
     exit(-1);
   }
 
-  FILE *flog = fopen("fenrir.log", "wb");
+  FILE *flog = NULL;
+
   if (verbose_flag)
   {
+    flog = fopen("fenrir.log", "wb");
     log_add_fp(flog, LOG_DEBUG);
     log_set_level(LOG_TRACE);
   }
@@ -103,6 +113,9 @@ int main(int argc, char *argv[])
   }
 
   server(&server_config);
+
+  if (verbose_flag && flog)
+    fclose(flog);
 
   return 0;
 }

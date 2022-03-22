@@ -23,7 +23,7 @@ FenrirServer -d <folder>
 For example:
 
 ```bash
-FenrirServer -d /mnt/d/
+./FenrirServer -d /chd/ --verbose
 ```
 
 ## Compatible image formats
