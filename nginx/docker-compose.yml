@@ -1,0 +1,16 @@
+# setup example with nginx
+version: "3.9"
+services:
+  nginx:
+    image: nginx
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - d:\\chd:/mount/chd
+    ports:
+      - "80:80"
+      
+  server:
+    image: ghcr.io/fenrir-ode/webserver:main
+    volumes:
+      - d:\\chd:/chd
+
