@@ -74,6 +74,7 @@ endif()
 
 add_library(FenrirObjLib OBJECT ${FenrirServerSrc})
 target_compile_definitions(FenrirObjLib PUBLIC LOG_USE_COLOR)
+add_dependencies(FenrirObjLib libchdr)
 
 add_executable(FenrirServer src/cli-main.c ${FenrirServerHdr})
 add_dependencies(FenrirServer libchdr)

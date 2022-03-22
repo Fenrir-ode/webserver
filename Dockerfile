@@ -7,5 +7,5 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 RUN mkdir build && cd build && cmake .. && make && make install && rm /work -rf
 
-
+CMD [ "FenrirServer", "-d", "/isos", "-p", "3000", "--verbose" ]
 EXPOSE 3000

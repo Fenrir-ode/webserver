@@ -1,2 +1,5 @@
 build/
+docker/
+msvc/
+msys/
 .vscode
