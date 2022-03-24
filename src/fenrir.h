@@ -62,11 +62,23 @@ extern "C"
             uint8_t pframe;
         }) raw_toc_dto_t;
 
+    /** per request **/
+    typedef struct
+    {
+        // streams
+        uint32_t req_fad;
+        uint32_t req_size;
+        // dir
+        uint32_t entries_offset;
+        // http buffer
+        uint8_t http_buffer[4 * 2048];
+    } fenrir_transfert_t;
+
+    /** per session **/
     typedef struct
     {
         // entry file name
         char filename[__MAX_PATH_LEN];
-        char image_path[__MAX_PATH_LEN];
 
         // chd or other image
         uint8_t type;
@@ -80,15 +92,16 @@ extern "C"
         uint32_t cur_hunk;
         // fenrir toc
         raw_toc_dto_t toc_dto[CD_MAX_TRACKS + 3]; // 99 + 3 Metadata track
+
+        // tmp
+        
         // streams
         uint32_t req_fad;
         uint32_t req_size;
-        uint8_t http_buffer[4 * 2048];
         // dir
         uint32_t entries_offset;
-        int patch_region;
-        int with_proxy;
-
+        // http buffer
+        uint8_t http_buffer[4 * 2048];
     } fenrir_user_data_t;
 
     uint32_t cdfmt_parse_toc(const char *tocfname, fenrir_user_data_t *, raw_toc_dto_t *fenrir_toc);

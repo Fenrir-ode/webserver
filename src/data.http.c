@@ -56,45 +56,6 @@ static uint32_t toc_http_handler(struct mg_connection *c, int ev, void *ev_data,
   struct mg_http_message *hm = (struct mg_http_message *)ev_data;
   char uri[64];
   int id = -1;
-#if 0
-  // Check if a game is selected
-  memcpy(uri, hm->uri.ptr, hm->uri.len);
-  if (sscanf(uri, "/toc_bin/%d", &id) == 1)
-  {
-    if (menu_get_filename_by_id(fenrir_user_data, id, fenrir_user_data->filename) == -1)
-    {
-      log_error("Nothing found for %d", id);
-    }
-    else
-    {
-      log_trace("Found: %s", fenrir_user_data->filename);
-    }
-  }
-
-  if (cdfmt_parse_toc(fenrir_user_data->filename, fenrir_user_data, fenrir_user_data->toc_dto) == 0)
-  {
-    log_debug("parse toc: %d tracks found", fenrir_user_data->toc.numtrks);
-    size_t sz = sizeof(raw_toc_dto_t) * (3 + fenrir_user_data->toc.numtrks);
-    mg_printf(c,
-              "HTTP/1.0 200 OK\r\n"
-              "Cache-Control: no-cache\r\n"
-              "Content-Type: application/octet-stream\r\n"
-              "Content-Length: %lu\r\n\r\n",
-              (unsigned long)sz);
-
-    // XXH32_hash_t hash = XXH32(fenrir_user_data->toc_dto, sz, 0);
-    // log_debug("toc hash: %08x\n", hash);
-
-    mg_send(c, fenrir_user_data->toc_dto, sz);
-    return 0;
-  }
-  else
-  {
-    log_error("parse toc failed");
-    mg_http_reply(c, 500, "", "%s", "Error\n");
-    return -1;
-  }
-#else
 
   if (open_toc(c, hm, fenrir_user_data) == 0)
   {
@@ -114,12 +75,26 @@ static uint32_t toc_http_handler(struct mg_connection *c, int ev, void *ev_data,
     mg_http_reply(c, 500, "", "%s", "Error\n");
     return -1;
   }
+}
 
-#endif
+static uint32_t data_close_handler(struct mg_connection *c, uintptr_t *data)
+{
+  per_request_data_t *per_request_data = (per_request_data_t *)data;
+  free(per_request_data->data);
+  return 0;
+}
+
+static uint32_t data_accept_handler(struct mg_connection *c, uintptr_t *data)
+{
+  per_request_data_t *per_request_data = (per_request_data_t *)data;
+  per_request_data->data = (uintptr_t *)calloc(sizeof(fenrir_user_data_t), 1);
+  return 0;
 }
 
 static const httpd_route_t httpd_route_toc = {
     .uri = "/toc_bin/*",
+    .close_handler = data_close_handler,
+    .accept_handler = data_accept_handler,
     .http_handler = toc_http_handler};
 
 // =============================================================
@@ -179,15 +154,6 @@ static uint32_t data_poll_handler(struct mg_connection *c, int ev, void *ev_data
 
   if (err == 0)
   {
-    if (fenrir_user_data->patch_region != -1 && fenrir_user_data->req_fad == 0)
-    {
-      patch_region_0(fenrir_user_data->http_buffer, fenrir_user_data->patch_region);
-    }
-    if (fenrir_user_data->patch_region != -1 && fenrir_user_data->req_fad == 1)
-    {
-      patch_region_1(fenrir_user_data->http_buffer, fenrir_user_data->patch_region);
-    }
-
     // XXH32_hash_t hash = XXH32(fenrir_user_data->http_buffer, SECTOR_SIZE, 0);
     // log_debug("sector[%08x] hash: %08x", fenrir_user_data->req_fad, hash);
 
@@ -214,6 +180,8 @@ static uint32_t data_poll_handler(struct mg_connection *c, int ev, void *ev_data
 
 static const httpd_route_t httpd_route_data = {
     .uri = "/data/*",
+    .close_handler = data_close_handler,
+    .accept_handler = data_accept_handler,
     .http_handler = data_http_handler,
     .poll_handler = data_poll_handler};
 

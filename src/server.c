@@ -43,7 +43,7 @@ int server(server_config_t *server_config)
   // start http server
   log_info("start http server");
   mg_mgr_init(&mgr);
-  httpd_init(&mgr, sizeof(fenrir_user_data_t), user_data_close_handler);
+  httpd_init(&mgr);
 
   menu_register_routes(&mgr);
   data_register_routes(&mgr);

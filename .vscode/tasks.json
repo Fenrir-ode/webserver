@@ -6,8 +6,8 @@
         {
             "label": "make",
             "type": "shell",
-            "command": "make",
-            "args": ["-j","32"],
+            "command": "ninja",
+            // "args": ["-j","32"],
             "options": {
                 "cwd": "${workspaceFolder}/build"
             }

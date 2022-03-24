@@ -82,16 +82,16 @@ void menu_http_handler_init(server_config_t *server_config)
     tree_walk(server_config);
 }
 
-static uint32_t menu_read_data(fenrir_user_data_t *fenrir_user_data)
+static uint32_t menu_read_data(fenrir_transfert_t *request)
 {
 
-    if (fenrir_user_data->entries_offset < (server_shared.sd_dir_entries_count * sizeof(sd_dir_entry_t)))
+    if (request->entries_offset < (server_shared.sd_dir_entries_count * sizeof(sd_dir_entry_t)))
     {
-        uint32_t max = (server_shared.sd_dir_entries_count * sizeof(sd_dir_entry_t)) - fenrir_user_data->entries_offset;
+        uint32_t max = (server_shared.sd_dir_entries_count * sizeof(sd_dir_entry_t)) - request->entries_offset;
         uint32_t sz = MIN(max, SECTOR_SIZE_2048);
-        uintptr_t sd_dir_ptr = (uintptr_t)server_shared.sd_dir_entries + fenrir_user_data->entries_offset;
-        memcpy(fenrir_user_data->http_buffer, (void *)sd_dir_ptr, sz);
-        fenrir_user_data->entries_offset += sz;
+        uintptr_t sd_dir_ptr = (uintptr_t)server_shared.sd_dir_entries + request->entries_offset;
+        memcpy(request->http_buffer, (void *)sd_dir_ptr, sz);
+        request->entries_offset += sz;
         return 0;
     }
     else
@@ -111,13 +111,26 @@ int menu_get_filename_by_id(fenrir_user_data_t *fenrir_user_data, uint32_t id, c
     return -1;
 }
 
+uint32_t menu_close_handler(struct mg_connection *c, uintptr_t *data) {    
+    per_request_data_t *per_request_data = (per_request_data_t *)data;
+    free(per_request_data->data);
+    return 0;
+}
+
+uint32_t menu_accept_handler(struct mg_connection *c, uintptr_t *data)
+{
+    per_request_data_t *per_request_data = (per_request_data_t *)data;
+    per_request_data->data = (uintptr_t *)calloc(sizeof(fenrir_transfert_t), 1);
+    return 0;
+}
+
 uint32_t menu_poll_handler(struct mg_connection *c, int ev, void *ev_data, void *fn_data)
 {
-    fenrir_user_data_t *fenrir_user_data = (fenrir_user_data_t *)fn_data;
+    fenrir_transfert_t *request = (fenrir_transfert_t *)fn_data;
 
-    if (menu_read_data(fenrir_user_data) == 0)
+    if (menu_read_data(request) == 0)
     {
-        mg_http_write_chunk(c, fenrir_user_data->http_buffer, SECTOR_SIZE_2048);
+        mg_http_write_chunk(c, request->http_buffer, SECTOR_SIZE_2048);
         return 0;
     }
     else
@@ -132,7 +145,7 @@ uint32_t menu_poll_handler(struct mg_connection *c, int ev, void *ev_data, void 
 
 uint32_t menu_http_handler(struct mg_connection *c, int ev, void *ev_data, void *fn_data)
 {
-    fenrir_user_data_t *fenrir_user_data = (fenrir_user_data_t *)fn_data;
+    fenrir_transfert_t *request = (fenrir_transfert_t *)fn_data;
     struct mg_http_message *hm = (struct mg_http_message *)ev_data;
 
     if (mg_vcasecmp(&hm->method, "HEAD") == 0)
@@ -160,14 +173,16 @@ uint32_t menu_http_handler(struct mg_connection *c, int ev, void *ev_data, void 
                      "Content-Type: application/octet-stream\r\n"
                      "Transfer-Encoding: chunked\r\n\r\n");
 
-        fenrir_user_data->entries_offset = range_start;
-        log_trace("Stream dir start at : %d", fenrir_user_data->entries_offset);
+        request->entries_offset = range_start;
+        log_trace("Stream dir start at : %d", request->entries_offset);
         return 0;
     }
 }
 
 static const httpd_route_t httpd_route_menu = {
     .uri = "/dir",
+    .accept_handler = menu_accept_handler,
+    .close_handler = menu_close_handler,
     .poll_handler = menu_poll_handler,
     .http_handler = menu_http_handler};
 
