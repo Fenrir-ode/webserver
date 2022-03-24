@@ -155,7 +155,7 @@ static uint32_t data_http_handler(struct mg_connection *c, int ev, void *ev_data
   if (http_is_request_behind_proxy(hm) && fenrir_user_data->type == IMAGE_TYPE_MAME_LDR)
   {
     char httpRedirectLocation[512];
-    snprintf(httpRedirectLocation, 512, "Location: /%s\r\n", fenrir_user_data->toc.tracks[0].filename);
+    snprintf(httpRedirectLocation, 512, "Location: %s\r\n", fenrir_user_data->toc.tracks[0].filename);
     mg_http_reply(c, 301, httpRedirectLocation, "");
     log_debug("redirect... %s", httpRedirectLocation);
     return -1;
