@@ -13,37 +13,68 @@
 
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
+#define FENRIR_USER_CACHE (10)
 
-static int open_toc(struct mg_connection *c, struct mg_http_message *hm, fenrir_user_data_t *fenrir_user_data)
+static fenrir_user_data_t fenrir_user_data_cache[FENRIR_USER_CACHE];
+
+fenrir_user_data_t *find_toc_in_cache(int id)
 {
-  char uri[64];
-  int id = -1;
-
-  // Check if a game is selected
-  memcpy(uri, hm->uri.ptr, hm->uri.len);
-  if ((sscanf(uri, "/toc_bin/%d", &id) == 1) || (sscanf(uri, "/data/%d", &id) == 1))
+  for (int i = 0; i < FENRIR_USER_CACHE; i++)
   {
-    if (menu_get_filename_by_id(fenrir_user_data, id, fenrir_user_data->filename) == -1)
+    if (fenrir_user_data_cache[i].id == id)
     {
-      log_error("Nothing found for %d", id);
-    }
-    else
-    {
-      log_trace("Found: %s", fenrir_user_data->filename);
+      return &fenrir_user_data_cache[i];
     }
   }
+  return NULL;
+}
 
-  if (cdfmt_parse_toc(fenrir_user_data->filename, fenrir_user_data, fenrir_user_data->toc_dto) == 0)
+fenrir_user_data_t *find_empty_slot()
+{
+  for (int i = 0; i < FENRIR_USER_CACHE; i++)
   {
-    log_debug("parse toc: %d tracks found", fenrir_user_data->toc.numtrks);
-    size_t sz = sizeof(raw_toc_dto_t) * (3 + fenrir_user_data->toc.numtrks);
+    if (fenrir_user_data_cache[i].id == -1)
+    {
+      return &fenrir_user_data_cache[i];
+    }
+  }
+  // todo add ts
+  // no slot found... use the first...
+  return &fenrir_user_data_cache[0];
+}
 
-    return 0;
+static fenrir_user_data_t *find_toc(int id)
+{
+  // check in cache
+  fenrir_user_data_t *ud = NULL;
+  ud = find_toc_in_cache(id);
+  if (ud)
+  {
+    return ud;
+  }
+  // toc not found in cache, open a new one
+
+  // find an empty slot
+  ud = find_empty_slot();
+
+  if (menu_get_filename_by_id(id, ud->filename) == -1)
+  {
+    log_error("Nothing found for %d", id);
+    return NULL;
+  }
+
+  // parse toc...
+  if (cdfmt_parse_toc(ud->filename, ud, ud->toc_dto) == 0)
+  {
+    log_debug("parse toc: %d tracks found", ud->toc.numtrks);
+    size_t sz = sizeof(raw_toc_dto_t) * (3 + ud->toc.numtrks);
+    ud->id = id;
+    return ud;
   }
   else
   {
     log_error("parse toc failed");
-    return -1;
+    return NULL;
   }
 }
 
@@ -52,12 +83,16 @@ static int open_toc(struct mg_connection *c, struct mg_http_message *hm, fenrir_
 // =============================================================
 static uint32_t toc_http_handler(struct mg_connection *c, int ev, void *ev_data, void *fn_data)
 {
-  fenrir_user_data_t *fenrir_user_data = (fenrir_user_data_t *)fn_data;
+  // fenrir_user_data_t *fenrir_user_data = (fenrir_user_data_t *)fn_data;
+
+  fenrir_transfert_t *request = (fenrir_transfert_t *)fn_data;
   struct mg_http_message *hm = (struct mg_http_message *)ev_data;
   char uri[64];
-  int id = -1;
 
-  if (open_toc(c, hm, fenrir_user_data) == 0)
+  int id = http_get_route_id(hm);
+  fenrir_user_data_t *fenrir_user_data = find_toc(id);
+
+  if (fenrir_user_data != NULL)
   {
     size_t sz = sizeof(raw_toc_dto_t) * (3 + fenrir_user_data->toc.numtrks);
     mg_printf(c,
@@ -87,7 +122,7 @@ static uint32_t data_close_handler(struct mg_connection *c, uintptr_t *data)
 static uint32_t data_accept_handler(struct mg_connection *c, uintptr_t *data)
 {
   per_request_data_t *per_request_data = (per_request_data_t *)data;
-  per_request_data->data = (uintptr_t *)calloc(sizeof(fenrir_user_data_t), 1);
+  per_request_data->data = (uintptr_t *)calloc(sizeof(fenrir_transfert_t), 1);
   return 0;
 }
 
@@ -102,18 +137,18 @@ static const httpd_route_t httpd_route_toc = {
 // =============================================================
 static uint32_t data_http_handler(struct mg_connection *c, int ev, void *ev_data, void *fn_data)
 {
-  fenrir_user_data_t *fenrir_user_data = (fenrir_user_data_t *)fn_data;
+  fenrir_transfert_t *request = (fenrir_transfert_t *)fn_data;
   struct mg_http_message *hm = (struct mg_http_message *)ev_data;
   uint32_t range_start = 0;
   uint32_t range_end = 0;
-  if (fenrir_user_data->toc.numtrks == 0)
+  int id = http_get_route_id(hm);
+  fenrir_user_data_t *fenrir_user_data = find_toc(id);
+
+  if (fenrir_user_data == NULL)
   {
-    if (open_toc(c, hm, fenrir_user_data) != 0)
-    {
-      mg_http_reply(c, 404, "", "Toc not valid or no file found");
-      log_error("Toc not valid or no file found");
-      return -1;
-    }
+    mg_http_reply(c, 404, "", "Toc not valid or no file found");
+    log_error("Toc not valid or no file found");
+    return -1;
   }
 
   // if running with a proxy, and current file is "proxifiable"
@@ -129,7 +164,8 @@ static uint32_t data_http_handler(struct mg_connection *c, int ev, void *ev_data
   if (http_get_range_header(hm, &range_start, &range_end) == 0)
   {
 
-    fenrir_user_data->req_fad = range_start / SECTOR_SIZE;
+    request->req_fad = range_start / SECTOR_SIZE;
+    request->id = id;
     // fenrir_user_data->req_size = SECTOR_SIZE * 200;
 
     mg_printf(c, "HTTP/1.1 206 OK\r\n"
@@ -148,31 +184,22 @@ static uint32_t data_http_handler(struct mg_connection *c, int ev, void *ev_data
 
 static uint32_t data_poll_handler(struct mg_connection *c, int ev, void *ev_data, void *fn_data)
 {
-  fenrir_user_data_t *fenrir_user_data = (fenrir_user_data_t *)fn_data;
+  fenrir_transfert_t *request = (fenrir_transfert_t *)fn_data;
+  fenrir_user_data_t *fenrir_user_data = find_toc(request->id);
 
-  uint32_t err = cdfmt_read_data(fenrir_user_data, fenrir_user_data->http_buffer, fenrir_user_data->req_fad, SECTOR_SIZE);
+  uint32_t err = cdfmt_read_data(fenrir_user_data, request->http_buffer, request->req_fad, SECTOR_SIZE);
 
   if (err == 0)
   {
-    // XXH32_hash_t hash = XXH32(fenrir_user_data->http_buffer, SECTOR_SIZE, 0);
-    // log_debug("sector[%08x] hash: %08x", fenrir_user_data->req_fad, hash);
-
-    mg_http_write_chunk(c, fenrir_user_data->http_buffer, SECTOR_SIZE);
-#if 0 // POSTMAN_DBG
-    mg_http_printf_chunk(c, ""); // postman dbg
-     c->is_draining = 1;
-    return 1;
-#endif
-
-    fenrir_user_data->req_fad++;
-    // fenrir_user_data->req_size -= SECTOR_SIZE;
+    mg_http_write_chunk(c, request->http_buffer, SECTOR_SIZE);
+    request->req_fad++;
     return 0;
   }
   else
   {
+    // End transfert
     log_trace("End transfert...");
     c->is_draining = 1;
-    // End transfert
     mg_http_printf_chunk(c, "");
     return 1;
   }
@@ -189,4 +216,10 @@ void data_register_routes(struct mg_mgr *mgr)
 {
   httpd_add_route(mgr, &httpd_route_toc);
   httpd_add_route(mgr, &httpd_route_data);
+
+  for (int i = 0; i < FENRIR_USER_CACHE; i++)
+  {
+    memset(&fenrir_user_data_cache[i], 0, sizeof(fenrir_user_data_t));
+    fenrir_user_data_cache[i].id = -1;
+  }
 }

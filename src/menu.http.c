@@ -100,7 +100,7 @@ static uint32_t menu_read_data(fenrir_transfert_t *request)
     }
 }
 
-int menu_get_filename_by_id(fenrir_user_data_t *fenrir_user_data, uint32_t id, char *filename)
+int menu_get_filename_by_id(uint32_t id, char *filename)
 {
     if (id <= server_shared.sd_dir_entries_count)
     {

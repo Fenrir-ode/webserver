@@ -72,11 +72,13 @@ extern "C"
         uint32_t entries_offset;
         // http buffer
         uint8_t http_buffer[4 * 2048];
+        int id;
     } fenrir_transfert_t;
 
     /** per session **/
     typedef struct
     {
+        int id;
         // entry file name
         char filename[__MAX_PATH_LEN];
 

@@ -137,3 +137,16 @@ int http_is_request_behind_proxy(struct mg_http_message *hm)
     struct mg_str *range = mg_http_get_header(hm, "X-Real-IP");
     return range && range->ptr;
 }
+
+int http_get_route_id(struct mg_http_message *hm)
+{
+    char uri[64];
+    int id = -1;
+    memcpy(uri, hm->uri.ptr, hm->uri.len);
+    uri[hm->uri.len] = 0;
+    if ((sscanf(uri, "/toc_bin/%d", &id) == 1) || (sscanf(uri, "/data/%d", &id) == 1))
+    {
+        return id;
+    }
+    log_debug("Id for route %s not found", uri);
+}
