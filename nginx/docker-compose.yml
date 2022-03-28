@@ -10,7 +10,7 @@ services:
       - "80:80"
       
   server:
-    command: FenrirServer -d /chd -p 80 --verbose
+    command: FenrirServer -d /chd -p 3000 --verbose
     image: ghcr.io/fenrir-ode/webserver:main
     volumes:
       - d:\\chd:/chd

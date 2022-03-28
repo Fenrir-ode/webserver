@@ -112,7 +112,10 @@ void httpd_poll(struct mg_connection *c, int ev, void *ev_data, void *fn_data)
                 return;
             }
         }
-
+        char uri[256];
+        memcpy(uri, hm->uri.ptr, hm->uri.len);
+        uri[hm->uri.len] = 0;
+        log_debug("unhandled route: %s", uri);
         mg_http_reply(c, 404, "", "Nothing here");
     }
 }

@@ -10,8 +10,8 @@ typedef struct
     uint32_t route_id;
     uint32_t (*http_handler)(struct mg_connection *c, int ev, void *ev_data, void *fn_data);
     uint32_t (*poll_handler)(struct mg_connection *c, int ev, void *ev_data, void *fn_data);
-    uint32_t (*accept_handler)(struct mg_connection *c, uintptr_t *);
-    uint32_t (*close_handler)(struct mg_connection *c, uintptr_t *);
+    uint32_t (*accept_handler)(struct mg_connection *c, uintptr_t);
+    uint32_t (*close_handler)(struct mg_connection *c, uintptr_t);
 } httpd_route_t;
 
 typedef struct

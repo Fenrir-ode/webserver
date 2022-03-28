@@ -111,13 +111,13 @@ int menu_get_filename_by_id(uint32_t id, char *filename)
     return -1;
 }
 
-uint32_t menu_close_handler(struct mg_connection *c, uintptr_t *data) {    
+uint32_t menu_close_handler(struct mg_connection *c, uintptr_t data) {    
     per_request_data_t *per_request_data = (per_request_data_t *)data;
     free(per_request_data->data);
     return 0;
 }
 
-uint32_t menu_accept_handler(struct mg_connection *c, uintptr_t *data)
+uint32_t menu_accept_handler(struct mg_connection *c, uintptr_t data)
 {
     per_request_data_t *per_request_data = (per_request_data_t *)data;
     per_request_data->data = (uintptr_t *)calloc(sizeof(fenrir_transfert_t), 1);
@@ -168,7 +168,8 @@ uint32_t menu_http_handler(struct mg_connection *c, int ev, void *ev_data, void 
         uint32_t range_end = 0;
         http_get_range_header(hm, &range_start, &range_end);
 
-        mg_printf(c, "HTTP/1.1 206 OK\r\n"
+        mg_printf(c, "HTTP/1.1 206 Partial Content\r\n"
+                     "Accept-Ranges: bytes\r\n"
                      "Cache-Control: no-cache\r\n"
                      "Content-Type: application/octet-stream\r\n"
                      "Transfer-Encoding: chunked\r\n\r\n");
