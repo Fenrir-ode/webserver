@@ -19,8 +19,10 @@ static int server_stopped = 0;
 
 static void server_thread_func(int id)
 {
-    server_config.port = 80;
-    server(&server_config);
+    if (server(&server_config) == -1) {
+        wxMessageBox( wxT("The server can not be launched. Check your port setting."), wxT("Error"), wxICON_ERROR);
+        exit(-1);
+    }
 }
 
 static int _run(uintptr_t ud)
@@ -67,10 +69,9 @@ bool FenrirServer::Joinable()
     return server_th.joinable();
 }
 
-void FenrirServer::SetRegionPatch(wxString r)
+void FenrirServer::SetPort(int port)
 {
-    wxCharBuffer region = r.ToUTF8();
-    //fenrir_user_data->patch_region = get_image_region(region.data());
+    server_config.port = port;
 }
 
 void FenrirServer::SetIsoDirectory(wxString directory)

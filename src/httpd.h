@@ -28,3 +28,5 @@ void httpd_poll(struct mg_connection *c, int ev, void *ev_data, void *fn_data);
 int http_get_range_header(struct mg_http_message *hm, uint32_t *range_start, uint32_t *range_end);
 int http_get_route_id(struct mg_http_message *hm);
 int http_is_request_behind_proxy(struct mg_http_message *hm);
+void http_redirect_to_file(struct mg_connection *c, struct mg_http_message *hm, const char * filename);
+

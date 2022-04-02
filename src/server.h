@@ -21,17 +21,8 @@ extern "C"
     typedef struct
     {
         int port;
-        int nb_threads;
         char image_path[__MAX_PATH_LEN];
     } server_config_t;
-
-    typedef struct
-    {
-        uint16_t id;
-        uint32_t flag;
-        char *path;
-        char *name;
-    } fs_cache_t;
 
     extern server_events_t *server_events;
 

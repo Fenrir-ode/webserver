@@ -3,6 +3,7 @@
 #include <wx/stdpaths.h>
 #include <wx/filepicker.h>
 #include <wx/filename.h>
+#include <wx/textctrl.h>
 #include "server-intf.h"
 #include "cJSON.h"
 
@@ -12,7 +13,7 @@ static void LoadConfig(AppConfig &appconfig)
 {
   // default settings
   appconfig.path = wxString("");
-  appconfig.region = wxString("Disabled");
+  appconfig.port = 3000;
 
   // load
   FILE *fd = fopen("server.cfg", "rb");
@@ -27,16 +28,16 @@ static void LoadConfig(AppConfig &appconfig)
 
     cJSON *json = cJSON_Parse(str);
     cJSON *path = cJSON_GetObjectItem(json, "path");
-    cJSON *region = cJSON_GetObjectItem(json, "region");
+    cJSON *port = cJSON_GetObjectItem(json, "port");
 
     if (cJSON_IsString(path))
     {
       appconfig.path = wxString::FromAscii(path->valuestring);
     }
 
-    if (cJSON_IsString(region))
+    if (cJSON_IsNumber(port))
     {
-      appconfig.region = wxString::FromAscii(region->valuestring);
+      appconfig.port = port->valueint;
     }
 
     cJSON_Delete(json);
@@ -49,7 +50,7 @@ static void SaveConfig(AppConfig &appconfig)
 {
   cJSON *root = cJSON_CreateObject();
   cJSON_AddItemToObject(root, "path", cJSON_CreateString(appconfig.path));
-  cJSON_AddItemToObject(root, "region", cJSON_CreateString(appconfig.region));
+  cJSON_AddItemToObject(root, "port", cJSON_CreateNumber(appconfig.port));
   const char *json = cJSON_Print(root);
 
   FILE *fd = fopen("server.cfg", "wb");
@@ -74,34 +75,17 @@ Simple::Simple(const wxString &title)
   wxPanel *panel = new wxPanel(this, wxID_ANY);
 
   // Create a wxFilePickerCtrl control
-  wxDirPickerCtrl *dirPickerCtrl = new wxDirPickerCtrl(panel, DIR_PICKER_ID,
-                                                       wxEmptyString, wxDirSelectorPromptStr,
-                                                       wxDefaultPosition, wxSize(350, wxDefaultCoord));
+  dirPickerCtrl = new wxDirPickerCtrl(panel, DIR_PICKER_ID,
+                                      wxEmptyString, wxDirSelectorPromptStr,
+                                      wxDefaultPosition, wxSize(350, wxDefaultCoord));
 
   wxStaticText *selectPathLabel = new wxStaticText(panel, wxID_ANY, "Saturn image path:");
-  wxStaticText *regionPatchLabel = new wxStaticText(panel, wxID_ANY, "Console region patch:");
+  wxStaticText *portLabel = new wxStaticText(panel, wxID_ANY, "Server port:");
+  wxString p;
+  portCtrl = new wxTextCtrl(this, PORT_ID, "", wxDefaultPosition, wxDefaultSize, wxTE_NO_VSCROLL, wxTextValidator(wxFILTER_DIGITS, &p), wxTextCtrlNameStr);
 
-  regionComboBox = new wxComboBox(panel, COMBO_REGION_ID, wxEmptyString, {10, 10});
-
-  wxString region_str[] = {_("Disabled"),
-                           _("Japan"),
-                           _("Taiwan"),
-                           _("USA"),
-                           _("Brazil"),
-                           _("Korea"),
-                           _("Asia Pal"),
-                           _("Europe"),
-                           _("Latin America")};
-
-  for (int i = 0; i < sizeof(region_str) / sizeof(wxString); i++)
-  {
-    regionComboBox->Append(region_str[i]);
-  }
-
-  regionComboBox->Select(0);
-
-  gameList_ctrl = new wxListView(panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_SINGLE_SEL);
-  gameList_ctrl->InsertColumn(0, wxString::Format("Path"), wxLIST_FORMAT_LEFT, 300);
+  gameList_ctrl = new wxListView(panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_AUTOARRANGE | wxLC_NO_HEADER | wxLC_LIST | wxLC_REPORT | wxLC_SINGLE_SEL);
+  gameList_ctrl->InsertColumn(0, wxString::Format("Path"), wxLIST_FORMAT_LEFT, 350);
 
   // Set up the sizer for the panel
   wxBoxSizer *panelSizer = new wxBoxSizer(wxVERTICAL);
@@ -109,8 +93,8 @@ Simple::Simple(const wxString &title)
   panelSizer->Add(selectPathLabel, 0, wxEXPAND | wxLEFT, 5);
   panelSizer->Add(dirPickerCtrl, 0, wxEXPAND | wxALL, 5);
   panelSizer->AddSpacer(15);
-  panelSizer->Add(regionPatchLabel, 0, wxEXPAND | wxLEFT, 5);
-  panelSizer->Add(regionComboBox, 0, wxEXPAND | wxALL, 5);
+  panelSizer->Add(portLabel, 0, wxEXPAND | wxLEFT, 5);
+  panelSizer->Add(portCtrl, 0, wxEXPAND | wxALL, 5);
   panelSizer->Add(gameList_ctrl, 1, wxEXPAND | wxALL, 5);
 
   // Set up the sizer for the frame and resize the frame
@@ -136,27 +120,21 @@ Simple::Simple(const wxString &title)
   // Apply config
   LoadConfig(appConfig);
   dirPickerCtrl->SetPath(appConfig.path);
-  regionComboBox->SetStringSelection(appConfig.region);
+  portCtrl->SetLabel("label");
+  portCtrl->SetValue(wxString::FromDouble(appConfig.port));
 
-  fenrirServer->SetRegionPatch(appConfig.region);
+  fenrirServer->SetPort(appConfig.port);
   fenrirServer->SetIsoDirectory(appConfig.path);
 }
 
 void Simple::OnRun(wxCommandEvent &event)
 {
-  fenrirServer->Run();
-}
-
-void Simple::OnComboBox(wxCommandEvent &event)
-{
-
-  // wxPostEvent()
-  //  int r = event.GetSelection();
-  fenrirServer->SetRegionPatch(regionComboBox->GetStringSelection());
-
-  appConfig.region = regionComboBox->GetStringSelection();
-
+  portCtrl->GetValue().ToLong(&appConfig.port, 10);
   SaveConfig(appConfig);
+
+  fenrirServer->SetIsoDirectory(appConfig.path);
+  fenrirServer->SetPort(appConfig.port);
+  fenrirServer->Run();
 }
 
 void Simple::OnClose(wxCommandEvent &evt)
@@ -178,16 +156,12 @@ void Simple::Exit()
 
 void Simple::OnPathChanged(wxFileDirPickerEvent &evt)
 {
-  SetIsoDirectory(evt.GetPath());
-
   appConfig.path = evt.GetPath();
-  SaveConfig(appConfig);
 }
 
 void Simple::SetIsoDirectory(wxString dir)
 {
   // wxLogMessage("Hello world from wxWidgets!");
-  fenrirServer->SetIsoDirectory(dir);
 }
 
 void Simple::OnServerEvent(wxCommandEvent &evt)
@@ -198,15 +172,21 @@ void Simple::OnServerEvent(wxCommandEvent &evt)
   case FENRIR_SERVER_EVENT_TYPE_PENDING:
     runningStatus = FENRIR_SERVER_EVENT_TYPE_PENDING;
     run_btn->Enable(false);
+    portCtrl->Enable(false);
+    dirPickerCtrl->Enable(false);
     // close_btn->Enable(false);
     break;
   case FENRIR_SERVER_EVENT_TYPE_RUN:
     run_btn->Enable(false);
+    portCtrl->Enable(false);
+    dirPickerCtrl->Enable(false);
     // close_btn->Enable(false);
     runningStatus = FENRIR_SERVER_EVENT_TYPE_RUN;
     break;
   case FENRIR_SERVER_EVENT_TYPE_STOPPED:
     run_btn->Enable(false);
+    portCtrl->Enable(false);
+    dirPickerCtrl->Enable(false);
     // close_btn->Enable(false);
     runningStatus = FENRIR_SERVER_EVENT_TYPE_STOPPED;
     break;
@@ -226,9 +206,9 @@ void Simple::OnServerEvent(wxCommandEvent &evt)
 
 BEGIN_EVENT_TABLE(Simple, wxFrame)
 EVT_DIRPICKER_CHANGED(DIR_PICKER_ID, Simple::OnPathChanged)
-EVT_COMBOBOX(COMBO_REGION_ID, Simple::OnComboBox)
 EVT_BUTTON(BUTTON_Close, Simple::OnClose)
 EVT_BUTTON(BUTTON_Run, Simple::OnRun)
 EVT_COMMAND(wxID_ANY, FENRIR_SERVER_EVENT, Simple::OnServerEvent)
+// EVT_TEXT_ENTER(PORT_ID, Simple::OnPortChanged)
 EVT_CLOSE(Simple::OnClose)
 END_EVENT_TABLE()

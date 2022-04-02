@@ -28,7 +28,7 @@ public:
   void Init();
   void Run();
 
-  void SetRegionPatch(wxString region);
+  void SetPort(int port);
   void SetIsoDirectory(wxString directory);
 
   void StopServer();

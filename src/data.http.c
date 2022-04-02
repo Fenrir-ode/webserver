@@ -132,41 +132,6 @@ static const httpd_route_t httpd_route_toc = {
     .accept_handler = data_accept_handler,
     .http_handler = toc_http_handler};
 
-static char *urlencode_path(char *originalText)
-{
-  // allocate memory for the worst possible case (all characters need to be encoded)
-  char *encodedText = (char *)malloc(sizeof(char) * strlen(originalText) * 3 + 1);
-
-  const char *hex = "0123456789abcdef";
-
-  int pos = 0;
-  int k = 0;
-  for (int i = 0; i < strlen(originalText); i++)
-  {
-    // handle fs path
-    if (originalText[i] == '\\' || originalText[i] == '/')
-    {
-      // remove double /
-      if (k == 0)
-        encodedText[pos++] = '/';
-      k++;
-    }
-    else if (('a' <= originalText[i] && originalText[i] <= 'z') || ('A' <= originalText[i] && originalText[i] <= 'Z') || ('0' <= originalText[i] && originalText[i] <= '9'))
-    {
-      k = 0;
-      encodedText[pos++] = originalText[i];
-    }
-    else
-    {
-      k = 0;
-      encodedText[pos++] = '%';
-      encodedText[pos++] = hex[originalText[i] >> 4];
-      encodedText[pos++] = hex[originalText[i] & 15];
-    }
-  }
-  encodedText[pos] = '\0';
-  return encodedText;
-}
 
 // =============================================================
 // Data
@@ -190,19 +155,7 @@ static uint32_t data_http_handler(struct mg_connection *c, int ev, void *ev_data
   // if running with a proxy, and current file is "proxifiable"
   if (http_is_request_behind_proxy(hm) && fenrir_user_data->type == IMAGE_TYPE_MAME_LDR)
   {
-    char host[512];
-    char httpRedirectLocation[512];
-    char *filenameEncoded = urlencode_path(fenrir_user_data->toc.tracks[0].filename);
-
-    struct mg_str *range = mg_http_get_header(hm, "Host");
-    memcpy(host, range->ptr, range->len);
-    host[range->len] = 0;
-
-    snprintf(httpRedirectLocation, 512, "Location: http://%s%s\r\n", host, filenameEncoded);
-    mg_http_reply(c, 301, httpRedirectLocation, "");
-    log_debug("redirect to: %s", httpRedirectLocation);
-    
-    free(filenameEncoded);
+    http_redirect_to_file(c, hm, fenrir_user_data->toc.tracks[0].filename);
     return -1;
   }
 
@@ -215,7 +168,7 @@ static uint32_t data_http_handler(struct mg_connection *c, int ev, void *ev_data
 
     mg_printf(c, "HTTP/1.1 206 Partial Content\r\n"
                  "Accept-Ranges: bytes\r\n"
-                 "Cache-Control: no-cache\r\n"
+                 //"Cache-Control: no-cache\r\n"
                  "Content-Type: application/octet-stream\r\n"
                  "Transfer-Encoding: chunked\r\n\r\n");
 

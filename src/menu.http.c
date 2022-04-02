@@ -9,6 +9,22 @@
 #include "httpd.h"
 #include "scandir.h"
 
+typedef struct
+{
+    uint16_t id;
+    uint32_t flag;
+    char *path;
+    char *name;
+} fs_cache_t;
+
+typedef struct
+{
+    fs_cache_t fs_cache[MAX_ENTRIES];
+    sd_dir_entry_t sd_dir_entries[MAX_ENTRIES];
+    uint32_t sd_dir_entries_count;
+    server_config_t * server_config;
+} server_shared_t;
+
 server_shared_t server_shared;
 
 extern server_events_t *server_events;
@@ -79,6 +95,7 @@ void menu_http_handler_init(server_config_t *server_config)
 {
     memset(&server_shared, 0, sizeof(server_shared_t));
     server_shared.sd_dir_entries_count = 0;
+    server_shared.server_config = server_config;
     tree_walk(server_config);
 }
 
@@ -111,7 +128,8 @@ int menu_get_filename_by_id(uint32_t id, char *filename)
     return -1;
 }
 
-uint32_t menu_close_handler(struct mg_connection *c, uintptr_t data) {    
+uint32_t menu_close_handler(struct mg_connection *c, uintptr_t data)
+{
     per_request_data_t *per_request_data = (per_request_data_t *)data;
     free(per_request_data->data);
     return 0;
@@ -148,12 +166,24 @@ uint32_t menu_http_handler(struct mg_connection *c, int ev, void *ev_data, void 
     fenrir_transfert_t *request = (fenrir_transfert_t *)fn_data;
     struct mg_http_message *hm = (struct mg_http_message *)ev_data;
 
+    
+    // cache the complete menu
+    if (http_is_request_behind_proxy(hm))
+    {
+        char filename[512];
+        sprintf(filename, "%s/dir", server_shared.server_config->image_path);
+        // write a static file, and redirect to it...
+        FILE *fd = fopen(filename, "wb");
+        fwrite(server_shared.sd_dir_entries, server_shared.sd_dir_entries_count * sizeof(sd_dir_entry_t), 1, fd);
+        fclose(fd);
+    }
+
     if (mg_vcasecmp(&hm->method, "HEAD") == 0)
     {
         mg_printf(c,
                   "HTTP/1.0 200 OK\r\n"
-                  "entry-count: %lu\r\n"
-                  "Cache-Control: no-cache\r\n"
+                  "X-Entry-Count: %lu\r\n"
+                  //"Cache-Control: no-cache\r\n"
                   "Content-Type: application/octet-stream\r\n"
                   "Content-Length: %lu\r\n"
                   "\r\n",
@@ -162,6 +192,7 @@ uint32_t menu_http_handler(struct mg_connection *c, int ev, void *ev_data, void 
         c->is_draining = 1;
         return -1;
     }
+    // stream the menu
     else
     {
         uint32_t range_start = 0;
@@ -170,7 +201,7 @@ uint32_t menu_http_handler(struct mg_connection *c, int ev, void *ev_data, void 
 
         mg_printf(c, "HTTP/1.1 206 Partial Content\r\n"
                      "Accept-Ranges: bytes\r\n"
-                     "Cache-Control: no-cache\r\n"
+                     //"Cache-Control: no-cache\r\n"
                      "Content-Type: application/octet-stream\r\n"
                      "Transfer-Encoding: chunked\r\n\r\n");
 

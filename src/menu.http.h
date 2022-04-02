@@ -4,14 +4,6 @@
 #define MAX_ENTRIES (3000)
 #endif
 
-typedef struct
-{
-    fs_cache_t fs_cache[MAX_ENTRIES];
-    sd_dir_entry_t sd_dir_entries[MAX_ENTRIES];
-    uint32_t sd_dir_entries_count;
-} server_shared_t;
-
-extern server_shared_t server_shared;
 
 /**
  * http routes registered:

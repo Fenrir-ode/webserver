@@ -153,3 +153,55 @@ int http_get_route_id(struct mg_http_message *hm)
     }
     log_debug("Id for route %s not found", uri);
 }
+
+static char *urlencode_path(const char *originalText)
+{
+    // allocate memory for the worst possible case (all characters need to be encoded)
+    char *encodedText = (char *)malloc(sizeof(char) * strlen(originalText) * 3 + 1);
+
+    const char *hex = "0123456789abcdef";
+
+    int pos = 0;
+    int k = 0;
+    for (int i = 0; i < strlen(originalText); i++)
+    {
+        // handle fs path
+        if (originalText[i] == '\\' || originalText[i] == '/')
+        {
+            // remove double /
+            if (k == 0)
+                encodedText[pos++] = '/';
+            k++;
+        }
+        else if (('a' <= originalText[i] && originalText[i] <= 'z') || ('A' <= originalText[i] && originalText[i] <= 'Z') || ('0' <= originalText[i] && originalText[i] <= '9'))
+        {
+            k = 0;
+            encodedText[pos++] = originalText[i];
+        }
+        else
+        {
+            k = 0;
+            encodedText[pos++] = '%';
+            encodedText[pos++] = hex[originalText[i] >> 4];
+            encodedText[pos++] = hex[originalText[i] & 15];
+        }
+    }
+    encodedText[pos] = '\0';
+    return encodedText;
+}
+
+void http_redirect_to_file(struct mg_connection *c, struct mg_http_message *hm, const char *filename) {
+    char host[128];
+    char httpRedirectLocation[256];
+    char *filenameEncoded = urlencode_path(filename);
+
+    struct mg_str *range = mg_http_get_header(hm, "Host");
+    memcpy(host, range->ptr, range->len);
+    host[range->len] = 0;
+
+    snprintf(httpRedirectLocation, 512, "Location: http://%s%s\r\n", host, filenameEncoded);
+    mg_http_reply(c, 301, httpRedirectLocation, "");
+    log_debug("redirect to: %s", httpRedirectLocation);
+
+    free(filenameEncoded);
+}

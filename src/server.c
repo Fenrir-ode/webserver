@@ -51,7 +51,13 @@ int server(server_config_t *server_config)
   char url[512];
   snprintf(url, sizeof(url), "http://0.0.0.0:%d", server_config->port);
 
-  mg_http_listen(&mgr, url, httpd_poll, NULL);
+  if (mg_http_listen(&mgr, url, httpd_poll, NULL) == NULL)
+  {
+    // exit
+    mg_timer_free(&t1);
+    mg_mgr_free(&mgr);
+    return -1;
+  }
 
   while (sig_end)
   {
