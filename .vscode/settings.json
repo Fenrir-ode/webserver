@@ -54,6 +54,7 @@
         "hash_map": "c",
         "bitset": "c",
         "regex": "c",
-        "thread": "cpp"
+        "thread": "cpp",
+        "log.h": "c"
     }
 }

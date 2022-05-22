@@ -14,6 +14,7 @@ extern "C"
     typedef struct
     {
         uintptr_t ud;
+        int (*started)(uintptr_t ud);
         int (*run)(uintptr_t ud);
         void (*notify_add_game)(uintptr_t ud, const char *fullgame);
     } server_events_t;
@@ -28,6 +29,11 @@ extern "C"
 
     //int server(fenrir_user_data_t *fenrir_user_data);
     int server(server_config_t *server_config);
+
+    /**
+     * send a mdns query then a http request to setup fenrir and server 
+     **/
+    int mdns_setup_fenrir();
 
 #ifdef __cplusplus
 }

@@ -46,9 +46,12 @@ set(FenrirServerSrc
   src/util/chdcd.cpp
   src/util/util.cpp
   src/cdfmt.c 
+  src/detect.c 
+  src/client.c 
   src/server.c 
   src/data.http.c 
   src/menu.http.c 
+  src/mdns/mdns.c 
   src/httpd.c 
   src/log.c
   src/scandir.cpp
@@ -69,7 +72,7 @@ endif()
 
 set(FenrirServerLibs chdr-static lzma zlib)
 if(WIN32)
-  set(FenrirServerLibs ${FenrirServerLibs} wsock32 ws2_32)
+  set(FenrirServerLibs ${FenrirServerLibs} wsock32 ws2_32 iphlpapi.lib)
 endif()
 
 add_library(FenrirObjLib OBJECT ${FenrirServerSrc})

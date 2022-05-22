@@ -9,10 +9,12 @@
 #include "httpd.h"
 #include "menu.http.h"
 
-static int noop() { return 0; }
+static int noop(void *arg) { return 0; }
+static int started(void *);
 
 static server_events_t _server_events = {
     .run = noop,
+    .started = noop,
     .notify_add_game = NULL,
     .ud = 0};
 
@@ -37,12 +39,17 @@ void usage(char *progname)
   printf("usage: %s [OPTION]\n", basename);
   printf("  -d, --dir\t\t"
          "CD Image directory to serve.\n");
-  printf("  -r --region\t\t"
-         " (J, T, U, B, K, A, E, L)\tSet console region.\n");
   printf("  -p --port\t\t"
          " port (80 by default)\n");
   printf("  --verbose\t"
          "Display more information.\n");
+  printf("  --link\t"
+         "Detect and setup local Fenrir to access this server.\n");
+}
+
+int started(void *arg)
+{
+    mdns_setup_fenrir();
 }
 
 int main(int argc, char *argv[])
@@ -55,6 +62,7 @@ int main(int argc, char *argv[])
   int option_valid = 0;
   static int verbose_flag = 0;
   static int proxy_flag = 0;
+  static int autolink = 0;
 
   // Parse options
   server_config_t server_config = {
@@ -63,13 +71,13 @@ int main(int argc, char *argv[])
   static const struct option long_options[] = {
       {"verbose", no_argument, &verbose_flag, 1},
       {"dir", required_argument, NULL, 'd'},
-      {"region", required_argument, NULL, 'r'},
       {"port", required_argument, NULL, 'p'},
+      {"link", no_argument, &autolink, 1},
       {0, 0, 0, 0}};
 
   while (1)
   {
-    c = getopt_long(argc, argv, "r:d:p:", long_options, &option_index);
+    c = getopt_long(argc, argv, "d:p:", long_options, &option_index);
     if (c == -1)
       break;
 
@@ -83,9 +91,6 @@ int main(int argc, char *argv[])
     case 'd':
       option_valid++;
       strcpy(server_config.image_path, optarg);
-      break;
-    case 'r':
-      // server_config.patch_region = get_image_region(optarg);
       break;
     default:
       log_error("");
@@ -110,6 +115,11 @@ int main(int argc, char *argv[])
   else
   {
     log_set_level(LOG_ERROR);
+  }
+
+  if (autolink)
+  {
+    server_events->started = started;
   }
 
   server(&server_config);

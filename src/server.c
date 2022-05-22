@@ -10,6 +10,7 @@
 #include "data.http.h"
 #include "patch.h"
 
+
 extern server_events_t *server_events;
 
 // =============================================================
@@ -58,6 +59,9 @@ int server(server_config_t *server_config)
     mg_mgr_free(&mgr);
     return -1;
   }
+
+  if (server_events->started)
+    server_events->started(server_events->ud);
 
   while (sig_end)
   {
