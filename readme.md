@@ -26,6 +26,21 @@ For example:
 ./FenrirServer -d /chd/ --verbose
 ```
 
+## Options
+
+* `-d, --dir` set the
+CD Image directory to serve
+* `-p, --port` set the http port used
+* `--link` use mdns to discover fenrir over the network and link it with the server
+* `--verbose` display more debug in command line
+
+## Gui 
+
+An optionnal wx-widgets gui build is possible, see CMakeLists.txt for detail.
+
+![FenrirServerGui](docs/gui.png)
+
+
 ## Compatible image formats
 
 It supports .cue/.nrg/.iso/.chd.
@@ -41,6 +56,8 @@ Toc parsing based on [MAME](https://docs.mamedev.org/).
 [libchdr](https://github.com/rtissera/libchdr) for CHD supports.
 
 are each distrubted under their own terms.
+
+[mdns](https://github.com/mjansson/mdns) for mdns discovery.
 
 
 ## Docker
