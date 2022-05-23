@@ -55,6 +55,22 @@
         "bitset": "c",
         "regex": "c",
         "thread": "cpp",
-        "log.h": "c"
+        "log.h": "c",
+        "client.h": "c",
+        "bit": "cpp",
+        "chrono": "cpp",
+        "codecvt": "cpp",
+        "condition_variable": "cpp",
+        "ctime": "cpp",
+        "map": "cpp",
+        "set": "cpp",
+        "netfwd": "cpp",
+        "ratio": "cpp",
+        "future": "cpp",
+        "iomanip": "cpp",
+        "iostream": "cpp",
+        "mutex": "cpp",
+        "shared_mutex": "cpp",
+        "variant": "cpp"
     }
 }

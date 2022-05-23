@@ -13,3 +13,5 @@ typedef struct
     enum client_method method;
     int finished;
 } client_data_t;
+
+int http_client(client_data_t *client_data);

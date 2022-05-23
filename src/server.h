@@ -33,7 +33,7 @@ extern "C"
     /**
      * send a mdns query then a http request to setup fenrir and server 
      **/
-    int mdns_setup_fenrir();
+    int mdns_setup_fenrir(server_config_t *);
 
 #ifdef __cplusplus
 }

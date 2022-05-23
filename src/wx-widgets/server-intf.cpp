@@ -13,16 +13,33 @@ wxDEFINE_EVENT(FENRIR_SERVER_EVENT, wxCommandEvent);
 static std::mutex server_mtx;
 static std::thread server_th;
 
+static std::mutex link_mtx;
+static std::thread link_th;
+
 server_config_t server_config;
 
 static int server_stopped = 0;
 
 static void server_thread_func(int id)
 {
-    if (server(&server_config) == -1) {
-        wxMessageBox( wxT("The server can not be launched. Check your port setting."), wxT("Error"), wxICON_ERROR);
+    if (server(&server_config) == -1)
+    {
+        wxMessageBox(wxT("The server can not be launched. Check your port setting."), wxT("Error"), wxICON_ERROR);
         exit(-1);
     }
+}
+
+static void server_link_thread_func(int id)
+{
+    link_mtx.lock();
+    mdns_setup_fenrir(&server_config);
+    link_mtx.unlock();
+}
+
+static int _server_started(uintptr_t ud)
+{
+    link_th = std::thread(server_link_thread_func, 0);
+    return 0;
 }
 
 static int _run(uintptr_t ud)
@@ -32,6 +49,7 @@ static int _run(uintptr_t ud)
 
 server_events_t _server_events = {
     .ud = 0,
+    .started = _server_started,
     .run = _run,
     .notify_add_game = NULL};
 
@@ -72,6 +90,11 @@ bool FenrirServer::Joinable()
 void FenrirServer::SetPort(int port)
 {
     server_config.port = port;
+}
+
+void FenrirServer::Link()
+{
+    mdns_setup_fenrir(&server_config);
 }
 
 void FenrirServer::SetIsoDirectory(wxString directory)

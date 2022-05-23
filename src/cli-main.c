@@ -49,7 +49,8 @@ void usage(char *progname)
 
 int started(void *arg)
 {
-    mdns_setup_fenrir();
+  server_config_t * server_config = (server_config_t *)arg;
+  mdns_setup_fenrir(server_config);
 }
 
 int main(int argc, char *argv[])
@@ -67,6 +68,8 @@ int main(int argc, char *argv[])
   // Parse options
   server_config_t server_config = {
       .port = 80};
+
+  server_events->ud = (uintptr_t)&server_config;
 
   static const struct option long_options[] = {
       {"verbose", no_argument, &verbose_flag, 1},

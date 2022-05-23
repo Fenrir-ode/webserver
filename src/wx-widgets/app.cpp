@@ -84,7 +84,7 @@ Simple::Simple(const wxString &title)
   wxString p;
   portCtrl = new wxTextCtrl(this, PORT_ID, "", wxDefaultPosition, wxDefaultSize, wxTE_NO_VSCROLL, wxTextValidator(wxFILTER_DIGITS, &p), wxTextCtrlNameStr);
 
-  gameList_ctrl = new wxListView(panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_AUTOARRANGE | wxLC_NO_HEADER | wxLC_LIST | wxLC_REPORT | wxLC_SINGLE_SEL);
+  gameList_ctrl = new wxListView(panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_AUTOARRANGE | wxLC_NO_HEADER | wxLC_LIST | wxLC_SINGLE_SEL);
   gameList_ctrl->InsertColumn(0, wxString::Format("Path"), wxLIST_FORMAT_LEFT, 350);
 
   // Set up the sizer for the panel

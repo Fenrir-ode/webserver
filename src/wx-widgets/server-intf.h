@@ -31,5 +31,7 @@ public:
   void SetPort(int port);
   void SetIsoDirectory(wxString directory);
 
+  void Link();
+
   void StopServer();
 };
