@@ -3,6 +3,8 @@ project(FenrirServer)
 include(ExternalProject)
 
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -s ")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -s ")
 
 # Add libchr
 ExternalProject_Add(libchdr
@@ -72,7 +74,7 @@ endif()
 
 set(FenrirServerLibs chdr-static lzma zlib)
 if(WIN32)
-  set(FenrirServerLibs ${FenrirServerLibs} wsock32 ws2_32 iphlpapi.lib)
+  set(FenrirServerLibs -static ${FenrirServerLibs} wsock32 ws2_32 iphlpapi.lib)
 endif()
 
 add_library(FenrirObjLib OBJECT ${FenrirServerSrc})
@@ -85,6 +87,8 @@ add_dependencies(FenrirServer libchdr)
 target_compile_definitions(FenrirServer PUBLIC LOG_USE_COLOR)
 target_link_libraries(FenrirServer FenrirObjLib ${FenrirServerLibs})
 
+# gui
+
 set(wxWidgets_USE_UNICODE On)
 set(wxWidgets_USE_UNIVERSAL On)
 
@@ -92,7 +96,18 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   set(wxWidgets_USE_STATIC On)
 endif()
 
+if(MINGW AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/msys_libs/builds/wxWidgets")
+  message(STATUS "Use static wxwidgets")
+  set(MINGW_STATIC "-static")
+  set(wxWidgets_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/msys_libs/builds/wxWidgets")
+  set(wxWidgets_LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/msys_libs/builds/wxWidgets/lib/gcc_x64_lib")
+else()
+  message(STATUS "Use shared wxwidgets")
+  set(MINGW_STATIC "")
+endif()
+
 find_package(wxWidgets COMPONENTS base core gl net)
+
 if(wxWidgets_FOUND)
   include(${wxWidgets_USE_FILE}) 
   set(GUI_FLAGS "")
@@ -106,7 +121,7 @@ if(wxWidgets_FOUND)
   set(FenrirServerLibs ${FenrirServerLibs} cjson)
 
   if(WIN32)
-    set(FenrirServerLibs ${FenrirServerLibs})
+    set(FenrirServerLibs ${MINGW_STATIC} ${FenrirServerLibs})
   endif()
 
   add_executable(FenrirServerGui ${GUI_FLAGS}

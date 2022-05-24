@@ -1,4 +1,18 @@
 {
+    "terminal.integrated.profiles.windows": {
+        "msys": {
+            "path": "D:\\msys64\\usr\\bin\\bash.exe",
+            "args": [
+                "--login",
+                "-i"
+            ],
+            "env": {
+                "MSYSTEM": "MINGW64",
+                "CHERE_INVOKING": "1",
+                "MSYS2_PATH_TYPE": "inherit"
+            }
+        }
+    },
     "files.associations": {
         "cctype": "c",
         "cmath": "c",

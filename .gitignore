@@ -2,6 +2,7 @@ build/
 msvc/
 msvc_libs/
 msys/
+msys_libs/
 docker/
 a.out
 bin/
