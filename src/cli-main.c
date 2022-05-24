@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
       strcpy(server_config.image_path, optarg);
       break;
     default:
-      log_error("");
+      log_error("unknown option %c", c);
       abort();
     }
   }

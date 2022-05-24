@@ -1,5 +1,7 @@
 build/
 msvc/
+msvc_libs/
 msys/
 docker/
 a.out
+bin/

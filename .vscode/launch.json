@@ -12,8 +12,6 @@
             "args": [
                 "-d",
                 "/mnt/d/chd/",
-                "-r",
-                "Ja",
                 "--verbose",
                 "-p",
                 "50000"
@@ -45,8 +43,6 @@
             "args": [
                 "-d",
                 "/mnt/d/chd/",
-                "-r",
-                "Ja",
                 "--verbose",
             ],
             "stopAtEntry": false,

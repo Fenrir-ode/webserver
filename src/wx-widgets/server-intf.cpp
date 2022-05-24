@@ -39,6 +39,7 @@ static void server_link_thread_func(int id)
 static int _server_started(uintptr_t ud)
 {
     link_th = std::thread(server_link_thread_func, 0);
+    link_th.detach();
     return 0;
 }
 

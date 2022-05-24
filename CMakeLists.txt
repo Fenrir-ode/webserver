@@ -121,7 +121,10 @@ if(wxWidgets_FOUND)
   # target_compile_options(FenrirServerGui PRIVATE -Wall -Wextra -Wpedantic -Werror)
   
   if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-    set_property(TARGET FenrirServerGui PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    set_property(TARGET FenrirServerGui PROPERTY MSVC_RUNTIME_LIBRARY 
+      "MultiThreaded$<$<CONFIG:Debug>:Debug>"
+      "MultiThreaded$<$<CONFIG:Release>:Release>"
+    )
   endif()
 
 endif()

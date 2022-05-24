@@ -8,6 +8,13 @@
 #include "libchdr/chd.h"
 #include "libchdr/cdrom.h"
 
+#ifdef _MSC_VER
+#define __builtin_bswap16 _byteswap_ushort
+#define __builtin_bswap32 _byteswap_ulong
+#define strncasecmp _strnicmp
+#define strcasecmp _stricmp
+#endif
+
 /* mame stuff */
 extern void cdrom_get_info_from_type_string(const char *typestring, uint32_t *trktype, uint32_t *datasize);
 extern uint32_t mame_parse_toc(const char *tocfname, cdrom_toc_t *out_cdrom_toc, raw_toc_dto_t *fenrir_toc);
