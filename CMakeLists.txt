@@ -9,7 +9,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -s ")
 # Add libchr
 ExternalProject_Add(libchdr
   GIT_REPOSITORY    https://github.com/rtissera/libchdr
-  GIT_TAG           master
+  GIT_TAG           045f2a7f23f5ac10c0122f6f56e42023dfb71e2a # newer version not supported yet
   PREFIX            "${CMAKE_BINARY_DIR}/libchdr"
   CMAKE_ARGS        "-DINSTALL_STATIC_LIBS=On"
   INSTALL_COMMAND cmake -E echo "Skipping install step."
