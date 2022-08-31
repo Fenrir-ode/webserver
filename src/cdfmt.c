@@ -225,7 +225,6 @@ static uint32_t chd_parse_toc(const char *tocfname, fenrir_user_data_t *fenrir_u
                 break;
             }
 
-
             log_info("track: %d / frame: %d / type:%s", track, frames, type);
 
             int padded = (frames + CD_TRACK_PADDING - 1) / CD_TRACK_PADDING;
@@ -268,7 +267,7 @@ static uint32_t chd_parse_toc(const char *tocfname, fenrir_user_data_t *fenrir_u
             numtrks++;
         }
 
-        chd_fenrir_set_leadin_leadout(fenrir_toc, numtrks, toc->tracks[numtrks - 1].logframeofs + 150);
+        chd_fenrir_set_leadin_leadout(fenrir_toc, numtrks, fad + 150);
         // print_raw_toc(fenrir_toc, numtrks);
         fenrir_ud->toc.numtrks = numtrks;
 
@@ -277,12 +276,48 @@ static uint32_t chd_parse_toc(const char *tocfname, fenrir_user_data_t *fenrir_u
     return 1;
 }
 
+static int compare_track(raw_toc_dto_t *a, raw_toc_dto_t *b)
+{
+    // order: A0 A1 A2 00 01 ....
+    int a_point = a->point;
+    int b_point = b->point;
+
+    if (a_point < 100)
+    {
+        a_point += 0x100;
+    }
+    if (b_point < 100)
+    {
+        b_point += 0x100;
+    }
+
+    return a_point - b_point;
+}
+
+static void convert_toc_to_sat(raw_toc_dto_t *fenrir_toc, uint32_t nb_tracks)
+{
+    // step 1 - sort by track nb
+    qsort(fenrir_toc, nb_tracks, sizeof(raw_toc_dto_t), compare_track);
+
+    // step 2 - dec to bcd
+    for (uint32_t i = 0; i < nb_tracks; i++)
+    {
+        if (fenrir_toc[i].point < 100)
+            fenrir_toc[i].point = dec_2_bcd(fenrir_toc[i].point);
+
+        fenrir_toc[i].pmin = dec_2_bcd(fenrir_toc[i].pmin);
+        fenrir_toc[i].psec = dec_2_bcd(fenrir_toc[i].psec);
+        fenrir_toc[i].pframe = dec_2_bcd(fenrir_toc[i].pframe);
+    }
+}
+
 uint32_t cdfmt_parse_toc(const char *tocfname, fenrir_user_data_t *fenrir_ud, raw_toc_dto_t *fenrir_toc)
 {
     int len = strlen(tocfname);
-    char * ext = (char*)tocfname +len;
+    char *ext = (char *)tocfname + len;
     int i = 0;
-    while (i < len && (*--ext != '.')) i++;
+    while (i < len && (*--ext != '.'))
+        i++;
 
     if (strcasecmp(ext, ".chd") == 0)
     {
@@ -294,7 +329,6 @@ uint32_t cdfmt_parse_toc(const char *tocfname, fenrir_user_data_t *fenrir_ud, ra
         fenrir_ud->type = IMAGE_TYPE_MAME_LDR;
         uint32_t mame_toc = mame_parse_toc(tocfname, &fenrir_ud->toc, fenrir_toc);
 
-        print_raw_toc(fenrir_toc, fenrir_ud->toc.numtrks);
         if (mame_toc == 0)
         {
             if (fenrir_ud->toc.numtrks == 1)
@@ -304,7 +338,9 @@ uint32_t cdfmt_parse_toc(const char *tocfname, fenrir_user_data_t *fenrir_ud, ra
                 fenrir_ud->toc.tracks[1].logframeofs = 0;
                 fenrir_ud->toc.tracks[1].fp = fenrir_ud->toc.tracks[0].fp;
             }
+            convert_toc_to_sat(fenrir_toc, fenrir_ud->toc.numtrks + 3);
         }
+        print_raw_toc(fenrir_toc, fenrir_ud->toc.numtrks);
         return mame_toc;
     }
 }
@@ -326,7 +362,7 @@ uint32_t cdfmt_read_data(fenrir_user_data_t *fenrir_user_data, uint8_t *data, ui
         cdrom_track_info_t *track_info = &fenrir_user_data->toc.tracks[track];
 
         uint64_t offset = track_info->offset + (fad - track_info->logframeofs) * track_info->datasize;
-        //log_trace("read at: %08x", offset);
+        // log_trace("read at: %08x", offset);
 
         if (fseek(track_info->fp, offset, SEEK_SET) == 0)
         {

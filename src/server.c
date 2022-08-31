@@ -42,7 +42,7 @@ int server(server_config_t *server_config)
   menu_http_handler_init(server_config);
 
   // start http server
-  log_info("start http server");
+  log_info("start http server - port: %d", server_config->port);
   mg_mgr_init(&mgr);
   httpd_init(&mgr);
 

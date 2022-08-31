@@ -152,5 +152,6 @@ option(ENABLE_TEST "enable test" Off)
 if (ENABLE_TEST)
   enable_testing()
   add_subdirectory (tests/menu)
+  add_subdirectory (tests/tocs)
 endif()
 

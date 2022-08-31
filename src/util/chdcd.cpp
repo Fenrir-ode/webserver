@@ -2145,8 +2145,7 @@ extern "C" uint32_t mame_parse_toc(const char *tocfname, cdrom_toc_t *out_cdrom_
 			fenrir_set_track(fenrir_toc, i + 1, out_cdrom_toc->tracks[i].trktype == CD_TRACK_AUDIO ? 0x01 : 0x41, fad);
 		}
 
-		uint32_t leadout = cdrom_get_track_start(&outtoc, 0xAA) + 150;
-		fenrir_set_leadin_leadout(out_cdrom_toc, fenrir_toc, out_cdrom_toc->numtrks, leadout);
+		fenrir_set_leadin_leadout(out_cdrom_toc, fenrir_toc, out_cdrom_toc->numtrks, logofs + 150);
 	}
 	return err;
 }
