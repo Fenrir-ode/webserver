@@ -1,8 +1,55 @@
+
+#include <time.h>
 #include "mongoose.h"
 #include "log.h"
 #include "httpd.h"
 
 static httpd_route_t *httpd_route[MAX_HTTPD_ROUTE];
+
+static uint64_t time_ms()
+{
+#if 0
+    struct timeval start;
+    gettimeofday(&start, NULL);
+    uint64_t time = 0;
+    time = start.tv_usec * 1000 + start.tv_sec / 1000;
+    return time;
+#else
+    return (clock() * 1000) / CLOCKS_PER_SEC;
+#endif
+}
+
+static void log_output(uint64_t t_diff, uint64_t sz)
+{
+    double bw = ((double)sz / (double)t_diff);
+    log_info("Bandwidth: %f kb/sec ", bw);
+}
+
+static void log_start(per_request_data_t *request)
+{
+    request->stat_clk = time_ms();
+    request->stat_sz = 0;
+}
+
+static void log_stop(per_request_data_t *request)
+{
+    clock_t cur_clock = time_ms();
+    unsigned long diff = (cur_clock - request->stat_clk);
+    log_output(diff, request->stat_sz);
+}
+
+static void log_speed(per_request_data_t *request, uint64_t packet_sz)
+{
+    clock_t cur_clock = time_ms();
+    unsigned long diff = (cur_clock - request->stat_clk);
+
+    request->stat_sz += packet_sz;
+
+    if (diff > 1000)
+    {
+        log_output(diff, request->stat_sz);
+    }
+}
 
 uint32_t httpd_init(struct mg_mgr *mgr)
 {
@@ -55,12 +102,17 @@ void httpd_poll(struct mg_connection *c, int ev, void *ev_data, void *fn_data)
     if (ev == MG_EV_ACCEPT)
     {
         c->fn_data = (per_request_data_t *)calloc(sizeof(per_request_data_t), 1);
+        log_start((per_request_data_t *)c->fn_data);
     }
     else if (ev == MG_EV_CLOSE)
     {
         if (per_request_data && per_request_data->route.close_handler)
         {
             per_request_data->route.close_handler(c, per_request_data);
+        }
+        if (per_request_data)
+        {
+            log_stop(per_request_data);
         }
         if (c->fn_data)
             free(c->fn_data);
@@ -76,6 +128,11 @@ void httpd_poll(struct mg_connection *c, int ev, void *ev_data, void *fn_data)
             {
                 per_request_data->route.poll_handler = NULL;
             }
+        }
+
+        if (per_request_data)
+        {
+            log_speed(per_request_data, c->send.len);
         }
     }
     else if (ev == MG_EV_HTTP_MSG)
@@ -190,7 +247,8 @@ static char *urlencode_path(const char *originalText)
     return encodedText;
 }
 
-void http_redirect_to_file(struct mg_connection *c, struct mg_http_message *hm, const char *filename) {
+void http_redirect_to_file(struct mg_connection *c, struct mg_http_message *hm, const char *filename)
+{
     char host[128];
     char httpRedirectLocation[256];
     char *filenameEncoded = urlencode_path(filename);
