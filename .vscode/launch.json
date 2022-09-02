@@ -5,6 +5,31 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "DOCKER nginx cli",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/docker/FenrirServer",
+            "args": ["-d", "/chd", "-p", "3000", "--verbose"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/docker",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Activer l'impression en mode Pretty pour gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description":  "Définir la version désassemblage sur Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+
+        {
             "name": "(gdb) toc tests",
             "type": "cppdbg",
             "request": "launch",
@@ -30,7 +55,7 @@
             ]
         },
         {
-            "name": "(gdb) FenrirServerGui Windows",
+            "name": "MSYS GUI",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/msys/FenrirServerGui.exe",
@@ -55,7 +80,7 @@
             ]
         },
         {
-            "name": "(gdb) FenrirServer Cli Windows",
+            "name": "MSYS CLI",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/msys/FenrirServer.exe",
