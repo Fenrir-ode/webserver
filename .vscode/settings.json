@@ -85,6 +85,14 @@
         "iostream": "cpp",
         "mutex": "cpp",
         "shared_mutex": "cpp",
-        "variant": "cpp"
+        "variant": "cpp",
+        "filesystem": "c",
+        "format": "c",
+        "forward_list": "c",
+        "xhash": "c",
+        "xiosbase": "c",
+        "xstring": "c",
+        "xtree": "c",
+        "xutility": "c"
     }
 }

@@ -6,3 +6,4 @@ msys_libs/
 docker/
 a.out
 bin/
+build*/

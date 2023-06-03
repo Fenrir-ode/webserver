@@ -11,7 +11,10 @@ ExternalProject_Add(libchdr
   GIT_REPOSITORY    https://github.com/rtissera/libchdr
   GIT_TAG           045f2a7f23f5ac10c0122f6f56e42023dfb71e2a # newer version not supported yet
   PREFIX            "${CMAKE_BINARY_DIR}/libchdr"
-  CMAKE_ARGS        "-DINSTALL_STATIC_LIBS=On"
+  CMAKE_ARGS        
+                    "-DINSTALL_STATIC_LIBS=On"
+                    "-DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}"
+  
   INSTALL_COMMAND cmake -E echo "Skipping install step."
 )
 
@@ -20,7 +23,8 @@ ExternalProject_Add(cJSON
   GIT_REPOSITORY    https://github.com/DaveGamble/cJSON
   GIT_TAG           master
   PREFIX            "${CMAKE_BINARY_DIR}/cJSON"
-  CMAKE_ARGS        "-DENABLE_CJSON_TEST=Off" "-DBUILD_SHARED_AND_STATIC_LIBS=Off" "-DENABLE_SANITIZERS=Off" "-DENABLE_CUSTOM_COMPILER_FLAGS=Off" "-DBUILD_SHARED_LIBS=Off"
+  CMAKE_ARGS        "-DENABLE_CJSON_TEST=Off" "-DBUILD_SHARED_AND_STATIC_LIBS=Off" "-DENABLE_SANITIZERS=Off" "-DENABLE_CUSTOM_COMPILER_FLAGS=Off" "-DBUILD_SHARED_LIBS=Off"                    
+                    "-DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}"
   INSTALL_COMMAND   cmake -E echo "Skipping install step."
 )
 
@@ -152,5 +156,6 @@ option(ENABLE_TEST "enable test" Off)
 if (ENABLE_TEST)
   enable_testing()
   add_subdirectory (tests/menu)
+  add_subdirectory (tests/tocs)
 endif()
 

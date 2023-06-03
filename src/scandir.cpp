@@ -6,7 +6,7 @@
 #include "scandir.h"
 
 #if defined(WIN32) || defined(_WIN32)
-#include <Windows.h>
+#include <windows.h>
 #ifndef PATH_MAX
 #define PATH_MAX MAX_PATH
 #endif

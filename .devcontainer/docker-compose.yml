@@ -1,12 +1,17 @@
 version: '3.9'
 services:
   nginx:
+    ports:
+      - "3000:80"
     volumes:
-      - d:\\chd:/mount/chd
-
+      - d:\\saturn:/mount/chd
+  mitmweb:
+    ports:
+      - 4000:8080
+      - 8081:8081
   server:
     volumes:
       - .:/workspace:cached
-      - d:\\chd:/chd
+      - d:\\saturn:/chd
     command: /bin/sh -c "while sleep 1000; do :; done"
  

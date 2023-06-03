@@ -2,4 +2,7 @@ build/
 docker/
 msvc/
 msys/
+bin/
+mvsc_libs/
+msys_libs/
 .vscode

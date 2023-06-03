@@ -5,7 +5,57 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(gdb) FenrirServerGui Windows",
+            "name": "DOCKER nginx cli",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/docker/FenrirServer",
+            "args": ["-d", "/chd", "-p", "3000", "--verbose"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/docker",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Activer l'impression en mode Pretty pour gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description":  "Définir la version désassemblage sur Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+
+        {
+            "name": "(gdb) toc tests",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/msys/tests/tocs/TocNekketsu.exe",
+            "args": [],
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}/msys/tests/tocs/",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "D:\\msys64\\mingw64\\bin\\gdb.exe",
+            "setupCommands": [
+                {
+                    "description": "Activer l'impression en mode Pretty pour gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Définir la version désassemblage sur Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "MSYS GUI",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/msys/FenrirServerGui.exe",
@@ -15,7 +65,41 @@
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
-            "miDebuggerPath": "D:\\msys64\\usr\\bin\\gdb.exe",
+            "miDebuggerPath": "D:\\msys64\\mingw64\\bin\\gdb.exe",
+            "setupCommands": [
+                {
+                    "description": "Activer l'impression en mode Pretty pour gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Définir la version désassemblage sur Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "MSYS CLI",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/msys/FenrirServer.exe",
+            "args": [
+                "-d",
+                "d:/saturn/",
+                "-p",
+                "3000",
+                "--verbose"
+            ],
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}/msys/",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "logging": {
+                "engineLogging": true
+            },
+            "miDebuggerPath": "D:\\msys64\\mingw64\\bin\\gdb.exe",
             "setupCommands": [
                 {
                     "description": "Activer l'impression en mode Pretty pour gdb",

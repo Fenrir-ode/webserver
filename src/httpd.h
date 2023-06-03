@@ -3,7 +3,6 @@
 #define MAX_FUD (10)
 #define MAX_HTTPD_ROUTE (10)
 
-
 typedef struct
 {
     const char *uri;
@@ -18,6 +17,8 @@ typedef struct
 {
     httpd_route_t route;
     uintptr_t *data;
+    uint64_t stat_sz;
+    uint64_t stat_clk;
 } per_request_data_t;
 
 uint32_t httpd_init(struct mg_mgr *mgr);
@@ -28,5 +29,4 @@ void httpd_poll(struct mg_connection *c, int ev, void *ev_data, void *fn_data);
 int http_get_range_header(struct mg_http_message *hm, uint32_t *range_start, uint32_t *range_end);
 int http_get_route_id(struct mg_http_message *hm);
 int http_is_request_behind_proxy(struct mg_http_message *hm);
-void http_redirect_to_file(struct mg_connection *c, struct mg_http_message *hm, const char * filename);
-
+void http_redirect_to_file(struct mg_connection *c, struct mg_http_message *hm, const char *filename);
